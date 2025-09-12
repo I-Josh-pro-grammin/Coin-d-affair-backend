@@ -124,7 +124,7 @@ const verifyEmail =  async(req,res) =>{
 const login = async(req,res)=>{
     try {
         const {email,password} = req.body
-        const result = await pool.query("SELECT * from users where email = $1",[email])
+        const result = await pool.query(`SELECT * from users where email = $1`,[email])
         if(!result.rows.length){
            return res.status(400).json({message: "Check your email or password"})
         }
