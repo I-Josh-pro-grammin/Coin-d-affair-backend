@@ -16,17 +16,17 @@ const register = async (req, res) => {
     if (existingEmail.rows.length > 0) {
       return res.status(400).json({ message: "Account already exist" });
     }
-    const verifyToken = crypto.randomUUID();
-    const verifyUrl = `${process.env.BACKEND_URL}/verify/${verifyToken}`;
-    const hashedPassword = hashPassword(password);
+    const emailVerifyToken = crypto.randomUUID();
+    const verifyUrl = `${process.env.BACKEND_URL}/verify/${emailVerifyToken}`;
+    const hashedPassword = await hashPassword(password);
     const saveInDb = await pool.query(
       `INSERT INTO users (email,phone,password,full_name,account_type,verifyToken) values ($1,$2,$3,$4,$5,$6)`,
-      [email],
-      [phone],
-      [hashedPassword],
-      [fullName],
-      [accountType],
-      [verifyToken]
+      [email,
+      phone,
+      hashedPassword,
+      fullName,
+      accountType,
+      emailVerifyToken]
     );
 
     transporter.sendMail({
@@ -65,7 +65,7 @@ const register = async (req, res) => {
             <!-- Hero -->
             <tr>
               <td style="padding:22px 24px 8px 24px; text-align:left;">
-                <h1 style="margin:0 0 8px 0; font-size:22px; line-height:1.2; color:#0f172a;">Hi {{user_name}}, welcome to Coin d'affaire 👋</h1>
+                <h1 style="margin:0 0 8px 0; font-size:22px; line-height:1.2; color:#0f172a;">Hi ${fullName}, welcome to Coin d'affaire 👋</h1>
                 <p style="margin:0; font-size:15px; color:#374151; line-height:1.5;">
                   Thanks for creating an account. To finish setting up your profile and start buying or selling, please verify your email address.
                 </p>
@@ -115,6 +115,7 @@ const verifyEmail =  async(req,res) =>{
         if(!checkInDb.rows.length){
             return res.status(400).json({message: "Invalid verification link"})
         }
+        res.status(200).json({message: "Email verified"});
     } catch (error) {
         res.status(500).json({message: "Internal server error"})
     }
