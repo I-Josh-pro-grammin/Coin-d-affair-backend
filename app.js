@@ -1,10 +1,10 @@
-const express =  require("express")
-const cors = require('cors')
-const bodyParser = require("body-parser")
-const listingRoutes = require('./src/route/listingRoutes')
-const authRoutes = require('./src/route/authRoutes')
-const orderRoutes = require("./src/route/orderRoutes")
-const paymentRoutes = require('./src/route/paymentRoutes')
+import express from 'express'
+import cors from 'cors'
+import bodyParser from "body-parser"
+import listingRoutes from './src/route/listingRoutes.js'
+import authRoutes from './src/route/authRoutes.js'
+import orderRoutes from "./src/route/orderRoutes.js"
+import paymentRoutes from './src/route/paymentRoutes.js'
 
 const app = express()
 
@@ -16,4 +16,4 @@ app.use('/',authRoutes)
 app.use('/',paymentRoutes)
 app.use("/",orderRoutes)
 
-module.exports = app;
+export default app;

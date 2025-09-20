@@ -12,8 +12,9 @@ const register = async (req, res) => {
       `SELECT user_id FROM users where email = $1`,
       [email]
     );
+    // res.json(existingEmail.rows.length);
 
-    if (existingEmail.rows.length > 0) {
+    if ((existingEmail.rows.length - 1) > 0) {
       return res.status(400).json({ message: "Account already exist" });
     }
     const verifyToken = crypto.randomUUID();
@@ -21,12 +22,12 @@ const register = async (req, res) => {
     const hashedPassword = hashPassword(password);
     const saveInDb = await pool.query(
       `INSERT INTO users (email,phone,password,full_name,account_type,verifyToken) values ($1,$2,$3,$4,$5,$6)`,
-      [email],
-      [phone],
-      [hashedPassword],
-      [fullName],
-      [accountType],
-      [verifyToken]
+      [email,
+      phone,
+      hashedPassword,
+      fullName,
+      accountType,
+      verifyToken]
     );
 
     transporter.sendMail({
@@ -103,7 +104,11 @@ const register = async (req, res) => {
 
     res.status(201).json({ message: "Check your email to verify account" });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+    console.log(error.message);
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message
+     });
   }
 };
 
