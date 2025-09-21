@@ -103,3 +103,5 @@ const getListing = async (req,res) =>{
         res.status(500).json({messsage: "Internal server error"})
     }
 }
+
+export { createListing, getListing };

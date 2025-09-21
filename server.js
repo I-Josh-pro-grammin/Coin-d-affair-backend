@@ -1,7 +1,5 @@
-
 import dotenv from 'dotenv'
 import app from './app.js'
-import loop from './src/config/database.js'
 dotenv.config()
 const PORT = process.env.PORT || '5000'
 
