@@ -55,7 +55,7 @@ const createListing = async (req, res) => {
 const getListing = async (req,res) =>{
     const {categoryId, subcategoryId, lat, lon , radius =1000, maxPrice, minPrice,sortBy} = req.query
     try {
-        let baseQuery = `SELECT l*, a.location from listings l LEFT JOIN l.location_id = a.address_id where 1=1`;
+        let baseQuery = `SELECT l.*, a.location from listings l LEFT JOIN addresses a ON l.location_id = a.address_id where 1=1`;
         let params = [];
         let idx = 1;
 
@@ -100,6 +100,7 @@ const getListing = async (req,res) =>{
 
         res.status(200).json({ listings: results.rows });
     } catch (error) {
+      console.log(error)
         res.status(500).json({messsage: "Internal server error"})
     }
 }
