@@ -5,7 +5,6 @@ import listingRoutes from './src/route/listingRoutes.js'
 import authRoutes from './src/route/authRoutes.js'
 import orderRoutes from "./src/route/orderRoutes.js"
 import paymentRoutes from './src/route/paymentRoutes.js'
-
 const app = express()
 
 app.use(cors())
