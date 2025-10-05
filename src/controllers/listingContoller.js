@@ -1,4 +1,4 @@
-const pool = require("../config/database");
+import pool from "../config/database.js";
 
 const createListing = async (req, res) => {
   const user = req.user;
@@ -42,12 +42,13 @@ const createListing = async (req, res) => {
       isNegotiable,
       canDeliver,
       stock,
-      attributes ? JSON.stringify(attributes) : "{}",
+      attributes ? JSON.stringify(attributes) : '{}',
       locationId,
     ]);
 
     res.json({messsage: "Product added successfully"})
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ messsage: "Internal server error" });
   }
 };
@@ -100,6 +101,7 @@ const getListing = async (req,res) =>{
 
         res.status(200).json({ listings: results.rows });
     } catch (error) {
+        console.log(error)
         res.status(500).json({messsage: "Internal server error"})
     }
 }
