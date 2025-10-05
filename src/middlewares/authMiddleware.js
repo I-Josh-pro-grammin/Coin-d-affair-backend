@@ -1,4 +1,5 @@
-const { verifyToken } = require('../utils/jwt')
+import { verifyToken } from '../utils/jwt.js'
+
 function protectedRoutes(accountType){
     return (req,res,next) =>{
         const token = req.cookies.Token
@@ -19,4 +20,5 @@ function protectedRoutes(accountType){
         }
     }
 }
-module.exports = protectedRoutes
+
+export default protectedRoutes;

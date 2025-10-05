@@ -1,8 +1,8 @@
 import express from 'express';
-import { createListing,getListing } from '../controllers/listingContoller';
-import { listingsLimiter } from '../middlewares/rateLimiting';
-import protectedRoutes from '../middlewares/authMiddleware';
-import checkSubscription from '../middlewares/subscriptionMiddleware';
+import { createListing,getListing } from '../controllers/listingContoller.js';
+import { listingsLimiter } from '../middlewares/rateLimiting.js';
+import protectedRoutes from '../middlewares/authMiddleware.js';
+import checkSubscription from '../middlewares/subscriptionMiddleware.js';
 const router = new express.Router();
 
 router.post("/products/createProduct",protectedRoutes("business"),checkSubscription,createListing)
