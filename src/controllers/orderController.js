@@ -104,7 +104,7 @@ export const getOrders = async (req, res) => {
     const { userId, sellerId, status } = req.query;
     let query = `
       SELECT o.*, u.username AS buyer, s.username AS seller
-      FROM orders o
+      FROM orders o 
       LEFT JOIN users u ON o.user_id = u.user_id
       LEFT JOIN users s ON o.seller_id = s.user_id
     `;
