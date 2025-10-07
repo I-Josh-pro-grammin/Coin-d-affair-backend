@@ -109,3 +109,10 @@ const removeCategory = async (req, res) => {
   }
 }
 
+export {
+  createCategory,
+  createSubCategory,
+  getCategory,
+  getSubCategory,
+  removeCategory
+}
