@@ -5,5 +5,6 @@ const router = express.Router()
 
 router.route('/').post(createCategory).get(getCategory)
 router.route('/sub-category/').post(createSubCategory).get(getSubCategory)
+router.route('/').get()
 
 export default router
