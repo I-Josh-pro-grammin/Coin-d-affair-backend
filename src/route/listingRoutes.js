@@ -5,7 +5,7 @@ import protectedRoutes from '../middlewares/authMiddleware.js';
 import checkSubscription from '../middlewares/subscriptionMiddleware.js';
 const router = new express.Router();
 
-router.post("/products/createProduct",protectedRoutes("business"),checkSubscription,createListing)
+// router.post("/products/createProduct",protectedRoutes("business"),checkSubscription,createListing)
 router.get("/products/getProducts",getListing,listingsLimiter)
 
 export default router;
