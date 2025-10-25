@@ -12,7 +12,6 @@ const register = async (req, res) => {
       `SELECT user_id FROM users where email = $1`,
       [email]
     );
-    // res.json(existingEmail.rows.length);
 
     if ((existingEmail.rows.length - 1) > 0) {
       return res.status(400).json({ message: "Account already exist" });
