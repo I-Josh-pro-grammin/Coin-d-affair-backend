@@ -20,7 +20,7 @@ const createBusiness = (req, res) => {
 
 const getAllBusinesses = async(req, res) => {
   try {
-    const businesses = await pool.query(`SELECT * FROM businesses;`);
+    const businesses = await pool.query(`SELECT * FROM businesses;`, []);
     res.status(200).json({
       "Businesses": businesses.rows
     })
@@ -29,7 +29,23 @@ const getAllBusinesses = async(req, res) => {
   }
 }
 
+const getBusinessById = async (req, res) => {
+  const {id} = req.params;
+try {
+  const business = await pool.query(`SELECT * FROM businesses WHERE business_id = $1;`, [id]);
+  res.status(200).json({
+    "business": business.rows
+  });
+} catch (error) {
+  console.log(error)
+  res.status(401).json({
+    "message": "Business not found"
+  })
+}  
+}
+
 export {
   createBusiness,
-  getAllBusinesses
+  getAllBusinesses,
+  getBusinessById
 }
