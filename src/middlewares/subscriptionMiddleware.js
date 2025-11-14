@@ -1,4 +1,4 @@
-const pool = require('../config/database')
+import pool from '../config/database.js'
 
 const checkSubscription = async(req,res,next)=>{
     const user = req.user
@@ -25,4 +25,4 @@ const checkSubscription = async(req,res,next)=>{
     }
 }
 
-module.exports = checkSubscription
+export default checkSubscription;

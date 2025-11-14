@@ -21,12 +21,14 @@ const register = async (req, res) => {
     const hashedPassword = await hashPassword(password);
     const saveInDb = await pool.query(
       `INSERT INTO users (email,phone,password,full_name,account_type,verifyToken) values ($1,$2,$3,$4,$5,$6)`,
-      [email,
+      [
+      email,
       phone,
       hashedPassword,
       fullName,
       accountType,
-      verifyToken]
+      emailVerifyToken
+    ]
     );
 
     transporter.sendMail({
@@ -134,7 +136,7 @@ const loginController = async(req,res)=>{
            return res.status(400).json({message: "Check your email or password"})
         }
 
-        const isPasswordCollect = comparePassword(password,result.rows[0].password);
+        const isPasswordCollect = await comparePassword(password,result.rows[0].password);
         if(!isPasswordCollect){
             return res.status(400).json({message: "Check your email or password"})
         }

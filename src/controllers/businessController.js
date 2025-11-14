@@ -1,5 +1,23 @@
 import pool from "../config/database";
 
+const createBusiness = (req, res) => {
+  const {user_id, business_name, vat_number, subscription_plan, is_paid} = req.body;
+  const values = [
+    user_id, business_name, vat_number, subscription_plan, is_paid
+  ];
+
+  try {
+    const qry = pool.query(`INSERT INTO businesses(user_id, business_name, vat_number, subscription_plan, is_paid) VALUES ($1, $2, $3, $4, $5);`, values );
+    console.log("Its over");
+    return res.status(201).json({
+      "message": "business created successfully"
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("Failed to create business")
+  }
+}
+
 const getBusinessProfile = async (req, res) => {
   try {
     const result = await pool.query(
@@ -238,6 +256,7 @@ const getBusinessTransactions = async(req,res)=>{
 }
 
 export {
+  createBusiness,
   getBusinessProfile,
   getBusinessProductsPost,
   addProductPost,
