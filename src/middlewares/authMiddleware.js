@@ -1,6 +1,7 @@
 import { verifyToken } from '../utils/jwt.js'
 
 function protectedRoutes(accountType){
+    const allowedTypes = Array.isArray(accountType) ? accountType : [accountType]
     return (req,res,next) =>{
         const token = req.cookies.Token
 
@@ -10,7 +11,7 @@ function protectedRoutes(accountType){
 
         try {
             const decoded = verifyToken(token)
-            if(accountType !== decoded.accountType){
+            if(!allowedTypes.includes(decoded.accountType)){
                 return res.status(403).json({message: "Forbidden"})
             }
             req.user =  decoded;

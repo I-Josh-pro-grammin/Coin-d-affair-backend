@@ -221,7 +221,7 @@ const deleteProductPost = async (req, res) => {
     }
 
     const checkProduct = await pool.query(
-      `SELECT ord.status as orderStatus, oi.order_id as orderId from orders ord join order_items oi on  oi.order_id = or.order_id where oi.listing_id = $1 `,
+      `SELECT ord.status as orderStatus, oi.order_id as orderId from orders ord join order_items oi on  oi.order_id = ord.order_id where oi.listing_id = $1 `,
       [productId]
     );
 

@@ -11,11 +11,11 @@ import {
 
 const router = express.Router();
 
-router.post("/api/orders", createOrder);
-router.get("/api/orders", getOrders);
-router.get("/api/orders/stats", getOrderStats);
-router.get("/api/orders/:id", getOrderById);
-router.put("/api/orders/:id", updateOrder);
-router.delete("/api/orders/:id", deleteOrder);
+router.post("/orders/create-order", createOrder);
+router.get("/orders/get-orders", getOrders);
+router.get("/orders/get-orders/stats", getOrderStats);
+router.get("/orders/get-order/:id", getOrderById);
+router.put("/orders/update-order/:id", updateOrder);
+router.delete("/orders/delete-order/:id", deleteOrder);
 
 export default router;

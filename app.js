@@ -9,17 +9,20 @@ import cartRoutes from './src/route/cartRoutes.js'
 import categoryRoutes from './src/route/categoryRoutes.js'
 import businessRoutes from './src/route/businessRoutes.js'
 import adminRoutes from './src/route/adminRoutes.js'
+import swaggerUi from 'swagger-ui-express'
+import swaggerSpec from './src/swagger.js'
 const app = express()
 
 app.use(cors())
 app.use(bodyParser.json())
-app.use('/',listingRoutes)
-app.use('/',authRoutes)
-app.use('/',paymentRoutes)
-app.use("/",orderRoutes)
-app.use("/api/business", businessRoutes)
-app.use('/api/carts/', cartRoutes)
-app.use('/api/categories/', categoryRoutes)
-app.use('/api/admin', adminRoutes)
+app.use('/api/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerSpec))
+app.use('/api',listingRoutes)
+app.use('/api',authRoutes)
+app.use('/api',paymentRoutes)
+app.use("/api",orderRoutes)
+app.use("/api", businessRoutes)
+app.use('/api', cartRoutes)
+app.use('/api', categoryRoutes)
+app.use('/api', adminRoutes)
 
 export default app;
