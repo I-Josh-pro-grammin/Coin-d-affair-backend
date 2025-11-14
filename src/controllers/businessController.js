@@ -1,4 +1,3 @@
-import Stripe from "stripe";
 import pool from "../config/database";
 
 const getBusinessProfile = async (req, res) => {
