@@ -11,9 +11,12 @@ const validateOrderData = (data) => {
     errors.push("items must be a non-empty array");
   } else {
     data.items.forEach((item, index) => {
-      if (!item.listingId) errors.push(`Item ${index + 1}: listingId is required`);
-      if (!item.quantity || item.quantity <= 0) errors.push(`Item ${index + 1}: quantity must be greater than 0`);
-      if (!item.unit_price || item.unit_price <= 0) errors.push(`Item ${index + 1}: unit_price must be greater than 0`);
+      if (!item.listingId)
+        errors.push(`Item ${index + 1}: listingId is required`);
+      if (!item.quantity || item.quantity <= 0)
+        errors.push(`Item ${index + 1}: quantity must be greater than 0`);
+      if (!item.unit_price || item.unit_price <= 0)
+        errors.push(`Item ${index + 1}: unit_price must be greater than 0`);
     });
   }
 
@@ -25,77 +28,141 @@ export const createOrder = async (req, res) => {
   try {
     const {
       userId,
-      sellerId,
       totalAmount,
       currency = "USD",
-      status = "pending",
-      isGuest = false,
       shippingAddressId,
-      billingAddressId,
       items,
     } = req.body;
+    const isGuest = !userId;
 
+    //validation
 
-    const validationErrors = validateOrderData({ totalAmount, items });
-    if (validationErrors.length > 0) {
-      return res.status(400).json({
-        error: "Validation failed",
-        details: validationErrors
-      });
+    if (!totalAmount || Number(totalAmount) <= 0) {
+      return res
+        .status(400)
+        .json({ error: "The total amount should not be less than 0" });
     }
 
-    await client.query("BEGIN");
+    if (!shippingAddressId) {
+      return res.status(400).json({ error: "No shipping address" });
+    }
 
-    const orderQuery = `
-      INSERT INTO orders 
-      (user_id, seller_id, total_amount, currency, status, shipping_address_id, billing_address_id, is_guest)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *;
-    `;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Items are required" });
+    }
 
-    const { rows: orderRows } = await client.query(orderQuery, [
-      userId || null,
-      sellerId || null,
-      totalAmount,
-      currency,
-      status,
-      shippingAddressId || null,
-      billingAddressId || null,
-      isGuest,
-    ]);
+    // validate items
 
-    const order = orderRows[0];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (!item.listingId)
+        return res
+          .status(400)
+          .json({ error: `The item ${i + 1} have no listing Id` });
+      if (!item.quantity || item.quantity <= 0)
+        return res
+          .status(400)
+          .json({ error: `The item ${i + 1} have no quantity` });
+      if (!item.unit_price || item.unit_price <= 0)
+        return res
+          .status(400)
+          .json({ error: `The item ${i + 1} have no unit price` });
+    }
 
-    const orderItemsQuery = `
-      INSERT INTO order_items (order_id, listing_id, sku_item_id, quantity, unit_price, total_price)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *;
-    `;
+    const shippingAddressCheck = await client.query(
+      `SELECT address_id from addresses where address_id = $1`,
+      [shippingAddressId]
+    );
+    if (shippingAddressCheck.rows.length === 0){
+      return res
+        .status(400)
+        .json({ message: "Shipping address not found" })
+    }
+      await client.query("BEGIN");
+    const insertOrderQuery = await client.query(
+      `INSERT INTO orders (user_id,total_amount,currency,status,shipping_address_id,is_guest) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [
+        userId || null,
+        totalAmount,
+        currency,
+        "pending",
+        shippingAddressId,
+        isGuest,
+      ]
+    );
 
-    const orderItems = [];
+    const orderQueryResults = insertOrderQuery.rows[0];
+    const insertOrderItemQuery = `INSERT INTO order_items (order_id,listing_id,quantity,unit_price,total_price) VALUES($1,$2,$3,$4,$5) RETURNING *`;
+    const businessMapping = {};
     for (const item of items) {
-      const total_price = item.quantity * item.unit_price;
-      const { rows } = await client.query(orderItemsQuery, [
-        order.order_id,
+      const listingQuery = `SELECT listings_id,title,business_id,price,stock from listings where listings_id = $1 FOR UPDATE`;
+      const listingQueryResult = (await client).query(listingQuery, [
         item.listingId,
-        item.sku_item_id || null,
+      ]);
+
+      if (listingQueryResult.rows.length === 0) {
+        (await client).query("ROLLBACK");
+        return res.status(400).json({ error: "No such product" });
+      }
+
+      const listing = listingQueryResult.rows[0];
+      if (listing.stock < item.quantity) {
+        (await client).query("ROLLBACK");
+        return res.status(400).json({ error: "Insufficient products" });
+      }
+
+      const realProductPrice = Number(listing.price);
+      if (Math.abs(realProductPrice - Number(item.unit_price)) > 0.01) {
+        (await client).query("ROLLBACK");
+        return res.status(400).json({ error: "Price mismatch" });
+      }
+
+      // insert order Items
+      const totalPrice = realProductPrice * item.quantity;
+      const orderItems = await client.query(insertOrderItemQuery, [
+        orderQueryResults.order_id,
+        item.listingId,
         item.quantity,
         item.unit_price,
-        item.total_price,
-        total_price
+        totalPrice,
       ]);
-      orderItems.push(rows[0]);
+
+      // deduct some products
+      (await client).query(
+        `UPDATE listings SET stock = stock - $1 WHERE listings_id = $2`,
+        [item.quantity, item.listingId]
+      );
+
+      // bussinessMapping
+      const businessId = listing.business_id
+
+      if(!businessMapping[businessId]){
+        businessMapping[businessId] = {totalAmount: 0, items: []}
+      }
+
+      businessMapping[businessId].items.push({
+        orderItemId: orderItems.rows[0].order_item_id,
+        listingId: listing.listings_id,
+        quantity: item.quantity,
+        unitPrice: realProductPrice,
+        totalPrice: totalPrice,
+        listingTitle: listing.title
+      })
+      businessMapping[businessId].totalAmount += totalPrice
     }
 
-    await client.query("COMMIT");
-
-    res.status(201).json({ order, orderItems });
+    await client.query("COMMIT")
+    return res.status(201).json({
+      message: "Order created successfully. Proceed to payment",
+      orderId: orderQueryResults.order_id,
+      orderQueryResults,
+      businessMapping
+    })
   } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Error creating order:", error);
-    res.status(500).json({ error: "Internal server error" });
-  } finally {
-    client.release();
+    await client.query("ROLLBACK")
+    res.status(500).json({message: "Internal server error"})
+  }finally{
+    client.release()
   }
 };
 
@@ -156,12 +223,13 @@ export const getOrderById = async (req, res) => {
       WHERE o.order_id = $1
     `;
     const { rows: orderRows } = await pool.query(orderQuery, [id]);
-    if (orderRows.length === 0) return res.status(404).json({ error: "Order not found" });
+    if (orderRows.length === 0)
+      return res.status(404).json({ error: "Order not found" });
 
     const itemsQuery = `
       SELECT oi.*, l.title as listing_title
       FROM order_items oi
-      LEFT JOIN listings l ON oi.listing_id = l.listing_id
+      LEFT JOIN listings l ON oi.listing_id = l.listings_id
       WHERE oi.order_id = $1
     `;
     const { rows: items } = await pool.query(itemsQuery, [id]);
@@ -176,7 +244,8 @@ export const getOrderById = async (req, res) => {
 export const updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { totalAmount, shippingAddressId, billingAddressId, status } = req.body;
+    const { totalAmount, shippingAddressId, billingAddressId, status } =
+      req.body;
 
     if (!id || isNaN(id)) {
       return res.status(400).json({ error: "Invalid order ID" });
@@ -201,7 +270,8 @@ export const updateOrder = async (req, res) => {
       id,
     ]);
 
-    if (rows.length === 0) return res.status(404).json({ error: "Order not found" });
+    if (rows.length === 0)
+      return res.status(404).json({ error: "Order not found" });
 
     res.json(rows[0]);
   } catch (error) {
@@ -218,8 +288,12 @@ export const deleteOrder = async (req, res) => {
       return res.status(400).json({ error: "Invalid order ID" });
     }
 
-    const { rowCount } = await pool.query("DELETE FROM orders WHERE order_id = $1", [id]);
-    if (rowCount === 0) return res.status(404).json({ error: "Order not found" });
+    const { rowCount } = await pool.query(
+      "DELETE FROM orders WHERE order_id = $1",
+      [id]
+    );
+    if (rowCount === 0)
+      return res.status(404).json({ error: "Order not found" });
 
     res.json({ message: "Order deleted successfully" });
   } catch (error) {

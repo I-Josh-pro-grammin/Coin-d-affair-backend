@@ -255,6 +255,20 @@ const getBusinessTransactions = async(req,res)=>{
   }
 }
 
+// const getBusinessOrders = async(req,res)=>{
+//   try {
+//     const user = req.user
+//     const businessSearch = await pool.query(`SELECT business_id from businesses where user_id=$1`,user.userId)
+//     if(businessSearch.rows.length === 0){
+//       return res.status(400).json({message: "No such business"})
+//     }
+
+//     const getOrderDetailQuery = `SELECT ord.order_id,`
+//   } catch (error) {
+    
+//   }
+// }
+
 export {
   createBusiness,
   getBusinessProfile,
