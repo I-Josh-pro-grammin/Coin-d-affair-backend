@@ -1,7 +1,8 @@
-import pool from "../config/database";
+import pool from "../config/database.js";
 
 const createBusiness = (req, res) => {
   const {user_id, business_name, vat_number, subscription_plan, is_paid} = req.body;
+  
   const values = [
     user_id, business_name, vat_number, subscription_plan, is_paid
   ];
@@ -18,22 +19,56 @@ const createBusiness = (req, res) => {
   }
 }
 
-const getBusinessProfile = async (req, res) => {
+const updateBusiness = async (req, res) => {
+  const { user_id } = req.body;
+  const updates = [];
+  const values = [];
+  let index = 1;
+
+  if (req.body.business_name) {
+    updates.push(`business_name = $${index++}`);
+    values.push(req.body.business_name);
+  }
+
+  if (req.body.vat_number) {
+    updates.push(`vat_number = $${index++}`);
+    values.push(req.body.vat_number);
+  }
+
+  if (req.body.subscription_plan) {
+    updates.push(`subscription_plan = $${index++}`);
+    values.push(req.body.subscription_plan);
+  }
+
+  if (typeof req.body.is_paid !== "undefined") {
+    updates.push(`is_paid = $${index++}`);
+    values.push(req.body.is_paid);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ message: "No fields provided to update" });
+  }
+
+  values.push(user_id);
+
+  const sql = `
+    UPDATE businesses
+    SET ${updates.join(", ")}
+    WHERE id = $${index}
+    RETURNING *;
+  `;
+
   try {
-    const result = await pool.query(
-      `SELECT business_name,subscription_plan, total_orders,rating,total_sales FROM businesses where user_id=$1`,
-      [req.user.userId]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Business not found" });
-    }
-
-    res.status(200).json(result.rows[0]);
+    await pool.query(sql, values);
+    res.status(200).json({ message: "Business updated successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+    console.error(error);
+    res.status(500).json({ message: "Failed to update business" });
   }
 };
+
+
+
 
 const getBusinessProductsPost = async (req, res) => {
   try {
@@ -257,7 +292,7 @@ const getBusinessTransactions = async(req,res)=>{
 
 export {
   createBusiness,
-  getBusinessProfile,
+  updateBusiness,
   getBusinessProductsPost,
   addProductPost,
   updateProductPost,

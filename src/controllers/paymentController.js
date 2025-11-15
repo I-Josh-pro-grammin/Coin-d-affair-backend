@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import pool from "../config/database";
+import pool from "../config/database.js";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 const createCheckoutSession = async (req, res) => {

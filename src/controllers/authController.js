@@ -4,7 +4,6 @@ import { generateToken, verifyToken } from "../utils/jwt.js";
 import crypto from "crypto";
 import { transporter } from "../config/emailSender.js";
 
-// api: /auth/register
 const register = async (req, res) => {
   const { fullName, email, password, accountType, phone } = req.body;
   try {
@@ -113,7 +112,6 @@ const register = async (req, res) => {
   }
 };
 
-// api: auth/verify/:verifyToken
 const verifyEmail =  async(req,res) =>{
     try {
         const { verifyToken } = req.params

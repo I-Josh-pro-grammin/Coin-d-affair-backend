@@ -23,6 +23,6 @@ app.use("/api",orderRoutes)
 app.use("/api", businessRoutes)
 app.use('/api', cartRoutes)
 app.use('/api', categoryRoutes)
-app.use('/api', adminRoutes)
+app.use('/api/admin', adminRoutes)
 
 export default app;
