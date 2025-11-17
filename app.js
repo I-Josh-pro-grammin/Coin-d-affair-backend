@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import bodyParser from "body-parser"
+import cookieParser from 'cookie-parser'
 import listingRoutes from './src/route/listingRoutes.js'
 import authRoutes from './src/route/authRoutes.js'
 import orderRoutes from "./src/route/orderRoutes.js"
@@ -12,18 +13,22 @@ import adminRoutes from './src/route/adminRoutes.js'
 import swaggerUi from 'swagger-ui-express'
 import swaggerSpec from './src/swagger.js'
 const app = express()
+const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:8080"
 
 app.use(cors({
-  origin: "http://localhost:8080",
+  origin: allowedOrigin,
   credentials: true
 }))
 
+app.use(express.json())
 app.use(bodyParser.json())
-app.use('/api/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerSpec))
-app.use('/api',listingRoutes)
-app.use('/api',authRoutes)
-app.use('/api',paymentRoutes)
-app.use("/api",orderRoutes)
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(cookieParser())
+app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+app.use('/api', listingRoutes)
+app.use('/api', authRoutes)
+app.use('/api', paymentRoutes)
+app.use("/api", orderRoutes)
 app.use("/api", businessRoutes)
 app.use('/api', cartRoutes)
 app.use('/api', categoryRoutes)

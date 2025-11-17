@@ -1,23 +1,34 @@
 import { verifyToken } from '../utils/jwt.js'
 
-function protectedRoutes(accountType){
-    const allowedTypes = Array.isArray(accountType) ? accountType : [accountType]
-    return (req,res,next) =>{
-        const token = req.cookies.Token
+function protectedRoutes(accountType = null) {
+    const allowedTypes = accountType
+        ? (Array.isArray(accountType) ? accountType : [accountType])
+        : null
 
-        if(!token){
-            return res.status(403).json({message: "Forbidden"})
+    return (req, res, next) => {
+        const authHeader = req.headers.authorization || ''
+        let token = null
+
+        if (authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1]
+        } else if (req.cookies && req.cookies.Token) {
+            token = req.cookies.Token
+        }
+
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized" })
         }
 
         try {
             const decoded = verifyToken(token)
-            if(!allowedTypes.includes(decoded.accountType)){
-                return res.status(403).json({message: "Forbidden"})
+            if (allowedTypes && !allowedTypes.includes(decoded.accountType)) {
+                return res.status(403).json({ message: "Forbidden" })
             }
-            req.user =  decoded;
+            req.user = decoded;
+            req.token = token;
             next()
         } catch (error) {
-            res.status(401).json({message: "Invalid token"})
+            res.status(401).json({ message: "Invalid token" })
         }
     }
 }

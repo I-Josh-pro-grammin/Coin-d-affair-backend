@@ -2,7 +2,7 @@ import pool from '../config/database.js'
 
 const createCategory = async (req, res) => {
   const {
-    category_name, 
+    category_name,
     slug
   } = req.body;
 
@@ -26,7 +26,7 @@ const createCategory = async (req, res) => {
 const createSubCategory = async (req, res) => {
   const {
     category_id,
-    subcategory_name, 
+    subcategory_name,
     slug
   } = req.body;
 
@@ -44,16 +44,16 @@ const createSubCategory = async (req, res) => {
 }
 
 const getCategory = async (req, res) => {
-  const {category_id} = req.params;
+  const { category_id } = req.params;
 
   try {
     const category = await pool.query(`
       SELECT category_name, slug FROM categories WHERE category_id = $1
      `, [category_id])
 
-  res.status(200).json({
-    message: category
-  })
+    res.status(200).json({
+      message: category
+    })
   } catch (error) {
     console.log(error)
     res.status(404).json({
@@ -63,7 +63,7 @@ const getCategory = async (req, res) => {
 }
 
 const getSubCategory = async (req, res) => {
-  const {subcategory_id} = req.params;
+  const { subcategory_id } = req.params;
 
   try {
     const subcategory = await pool.query(`
@@ -78,30 +78,30 @@ const getSubCategory = async (req, res) => {
       error: "Sub category not found"
     })
   }
-} 
+}
 
 const removeCategory = async (req, res) => {
-  const {category_id} = req.params;
+  const { category_id } = req.params;
 
   try {
     const category = await pool.query(`
         SELECT category_name, slug FROM categories WHERE category_id = $1
        `, [category_id])
 
-       if(category.lenth == 0) {
-         res.status(404).json({
-          error: "Category does not exist"
-         })
-       }
+    if (category.lenth == 0) {
+      res.status(404).json({
+        error: "Category does not exist"
+      })
+    }
 
-       await pool.query(`
+    await pool.query(`
         DELETE FROM categories WHERE category_id = $1
        `, [category_id])
 
     res.status(200).json({
       message: "Category removed successfully"
     })
-  }catch (error) {
+  } catch (error) {
     console.log(error)
     res.status(500).json({
       error: "Failed to delete category!"
@@ -109,10 +109,64 @@ const removeCategory = async (req, res) => {
   }
 }
 
+const getAllCategories = async (req, res) => {
+  try {
+    const categoriesResult = await pool.query(
+      `SELECT category_id, category_name, slug FROM categories ORDER BY category_name ASC`
+    );
+
+    const subcategoriesResult = await pool.query(
+      `SELECT subcategory_id, category_id, subcategory_name, slug FROM subcategories ORDER BY subcategory_name ASC`
+    );
+
+    const categories = categoriesResult.rows.map((category) => ({
+      ...category,
+      subcategories: subcategoriesResult.rows.filter(
+        (sub) => sub.category_id === category.category_id
+      ),
+    }));
+
+    res.status(200).json({ categories });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Failed to fetch categories" });
+  }
+};
+
+const getSubcategoriesByCategorySlug = async (req, res) => {
+  const { categorySlug } = req.params;
+  try {
+    const categoryResult = await pool.query(
+      `SELECT category_id, category_name FROM categories WHERE slug = $1`,
+      [categorySlug]
+    );
+
+    if (!categoryResult.rows.length) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    const categoryId = categoryResult.rows[0].category_id;
+    const subcategoriesResult = await pool.query(
+      `SELECT subcategory_id, subcategory_name, slug FROM subcategories WHERE category_id = $1 ORDER BY subcategory_name ASC`,
+      [categoryId]
+    );
+
+    res.status(200).json({
+      category: categoryResult.rows[0],
+      subcategories: subcategoriesResult.rows,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Failed to fetch subcategories" });
+  }
+};
+
 export {
   createCategory,
   createSubCategory,
   getCategory,
   getSubCategory,
-  removeCategory
+  removeCategory,
+  getAllCategories,
+  getSubcategoriesByCategorySlug
 }

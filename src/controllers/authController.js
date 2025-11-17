@@ -1,8 +1,17 @@
 import pool from "../config/database.js";
 import { hashPassword, comparePassword } from "../utils/hash.js";
-import { generateToken, verifyToken } from "../utils/jwt.js";
+import { generateToken } from "../utils/jwt.js";
 import crypto from "crypto";
 import { transporter } from "../config/emailSender.js";
+
+const toSafeUser = (user) => ({
+  userId: user.user_id,
+  name: user.full_name,
+  email: user.email,
+  phone: user.phone,
+  accountType: user.account_type,
+  isVerified: user.is_verified,
+});
 
 const register = async (req, res) => {
   const { fullName, email, password, accountType, phone } = req.body;
@@ -12,22 +21,23 @@ const register = async (req, res) => {
       [email]
     );
 
-    if ((existingEmail.rows.length - 1) > 0) {
+    if (existingEmail.rows.length > 0) {
       return res.status(400).json({ message: "Account already exist" });
     }
     const emailVerifyToken = crypto.randomUUID();
-    const verifyUrl = `${process.env.BACKEND_URL}/verify/${emailVerifyToken}`;
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
+    const verifyUrl = `${backendUrl}/api/auth/verify/${emailVerifyToken}`;
     const hashedPassword = await hashPassword(password);
-    const saveInDb = await pool.query(
+    await pool.query(
       `INSERT INTO users (email,phone,password,full_name,account_type,verifyToken) values ($1,$2,$3,$4,$5,$6)`,
       [
-      email,
-      phone,
-      hashedPassword,
-      fullName,
-      accountType,
-      emailVerifyToken
-    ]
+        email,
+        phone,
+        hashedPassword,
+        fullName,
+        accountType,
+        emailVerifyToken
+      ]
     );
 
     transporter.sendMail({
@@ -108,58 +118,82 @@ const register = async (req, res) => {
     res.status(500).json({
       message: "Internal server error",
       error: error.message
-     });
+    });
   }
 };
 
-const verifyEmail =  async(req,res) =>{
-    try {
-        const { verifyToken } = req.params
-        const checkInDb = await pool.query(`UPDATE users SET is_verified=true, verifytoken=NULL where verifyToken = $1`,[verifyToken])
-        if(!checkInDb.rows.length){
-            return res.status(400).json({message: "Invalid verification link"})
-        }
-        res.status(200).json({message: "Email verified"});
-    } catch (error) {
-        res.status(500).json({message: "Internal server error"})
+const verifyEmail = async (req, res) => {
+  try {
+    const { verifyToken } = req.params
+    const checkInDb = await pool.query(`UPDATE users SET is_verified=true, verifytoken=NULL where verifyToken = $1`, [verifyToken])
+    if (!checkInDb.rows.length) {
+      return res.status(400).json({ message: "Invalid verification link" })
     }
+    res.status(200).json({ message: "Email verified" });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" })
+  }
 }
 
 // api: /auth/login
-const loginController = async(req,res)=>{
-    try {
-        const {email,password} = req.body
-        const result = await pool.query(`SELECT * from users where email = $1`,[email])
-        if(!result.rows.length){
-           return res.status(400).json({message: "Check your email or password"})
-        }
-
-        const isPasswordCollect = await comparePassword(password,result.rows[0].password);
-        if(!isPasswordCollect){
-            return res.status(400).json({message: "Check your email or password"})
-        }
-
-        const user = result.rows[0]
-        const token = generateToken(user)
-
-        res.cookie('Token', token,{
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: 'strict',
-            maxAge: 7*24*60*60*1000
-        })
-
-        res.status(200).json({message: "Login successfully", user:{
-            userId: user.user_id,
-            accountType: user.account_type
-        }})
-    } catch (error) {
-        res.status(500).json({message: "Internal server error"})
+const loginController = async (req, res) => {
+  try {
+    const { email, password } = req.body
+    const result = await pool.query(`SELECT * from users where email = $1`, [email])
+    if (!result.rows.length) {
+      return res.status(400).json({ message: "Check your email or password" })
     }
+
+    const isPasswordCollect = await comparePassword(password, result.rows[0].password);
+    if (!isPasswordCollect) {
+      return res.status(400).json({ message: "Check your email or password" })
+    }
+
+    const user = result.rows[0]
+    const token = generateToken(user)
+
+    res.cookie('Token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    })
+
+    res.status(200).json({
+      message: "Login successfully",
+      token,
+      user: toSafeUser(user)
+    })
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" })
+  }
 }
 
+const getCurrentUser = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const result = await pool.query(
+      `SELECT user_id, full_name, email, phone, account_type, is_verified FROM users WHERE user_id = $1`,
+      [userId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ user: toSafeUser(result.rows[0]) });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export {
-    register,
-    verifyEmail,
-    loginController,
+  register,
+  verifyEmail,
+  loginController,
+  getCurrentUser,
 }
