@@ -1,44 +1,61 @@
 import Stripe from "stripe";
 import pool from "../config/database.js";
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const createCheckoutSession = async (req, res) => {
   try {
     // const user = req.user;
     const { cartItems } = req.body;
 
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+
     const listingsQuery = await pool.query(
-      `SELECT l.listings_id,l.price,l.business_id,l.currency,b.stripe_account_id from listings l left join businesses b on l.business_id = b.business_id where l.listings_id = ANY($1)`,
+      `SELECT l.listings_id,l.price,l.title,l.business_id,l.currency,b.stripe_account_id from listings l left join businesses b on l.business_id = b.business_id where l.listings_id = ANY($1)`,
       [cartItems.map((i) => i.listingId)]
     );
     const lineItems = [];
     const businessMapping = {};
 
-    if(!listing.business_id){
-      return res.status(400).json({message: "Business with that product not found"})
+    for (const listing of listingsQuery.rows) {
+      if (!listing.business_id) {
+        return res
+          .status(400)
+          .json({
+            message: `Business with this product ${listing.title} is not found`,
+          });
+      }
     }
 
     listingsQuery.rows.forEach((listing) => {
       const cartItem = cartItems.find(
-        (i) => (i.listingId = listing.listings_id))
+        (i) => i.listingId === listing.listings_id
+      );
+
+      if(!cartItem) return;
+      
       lineItems.push({
         price_data: {
           currency: listing.currency || "usd",
           product_data: { name: listing.title },
           unit_amount: Math.round(listing.price * 100),
         },
-        quantity: cartItem.quantity
+        quantity: cartItem.quantity,
       });
       if (!businessMapping[listing.business_id]) {
         businessMapping[listing.business_id] = [];
       }
-          businessMapping[listing.business_id].push({
-          listingId: listing.listings_id,
-          quantity: cartItem.quantity,
-          unitPrice: listing.price
-        });
+      businessMapping[listing.business_id].push({
+        listing_id: listing.listings_id,
+        quantity: cartItem.quantity,
+        unit_price: listing.price,
+      });
     });
 
+    if (lineItems.length === 0) {
+      return res.status(400).json({ message: "Invalid cart items" });
+    }
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -55,6 +72,4 @@ const createCheckoutSession = async (req, res) => {
   }
 };
 
-export{
-  createCheckoutSession
-}
+export { createCheckoutSession };

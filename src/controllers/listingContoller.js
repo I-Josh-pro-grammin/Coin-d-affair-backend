@@ -114,9 +114,31 @@ const getListingById = async (req, res) => {
 
         res.status(200).json({ listing: result.rows[0] });
     } catch (error) {
-        console.log(error)
         res.status(500).json({ message: "Internal server error" })
     }
 }
 
-export { getListing, getListingById };
+const getAllListings =  async(req,res)=>{
+    try{
+        const {limit =30, page =1} = req.query;
+        const normalizedLimit = Math.min(Number(limit) || 30,100)
+        const currentPage = Number(page) || 1
+        const offset = (currentPage -1 ) * normalizedLimit
+
+        let query = `${baseListingSelect} ORDER BY l.created_at DESC LIMIT $1 OFFSET $2`;
+        const result = await pool.query(query,[normalizedLimit,offset])
+
+        res.status(200).json({
+            products: result.rows,
+            pagination:{
+                page: currentPage,
+                limit: normalizedLimit,
+                count: result.rowCount
+            }
+        })
+    }catch(error){
+        return res.status(500).json({message: "Internal server error"})
+    }
+}
+
+export { getListing, getListingById,getAllListings };

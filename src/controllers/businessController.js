@@ -1,23 +1,32 @@
+import { Transaction } from "sequelize";
 import pool from "../config/database.js";
 
 const createBusiness = (req, res) => {
-  const {user_id, business_name, vat_number, subscription_plan, is_paid} = req.body;
-  
+  const { user_id, business_name, vat_number, subscription_plan, is_paid } =
+    req.body;
+
   const values = [
-    user_id, business_name, vat_number, subscription_plan, is_paid
+    user_id,
+    business_name,
+    vat_number,
+    subscription_plan,
+    is_paid,
   ];
 
   try {
-    const qry = pool.query(`INSERT INTO businesses(user_id, business_name, vat_number, subscription_plan, is_paid) VALUES ($1, $2, $3, $4, $5);`, values );
+    const qry = pool.query(
+      `INSERT INTO businesses(user_id, business_name, vat_number, subscription_plan, is_paid) VALUES ($1, $2, $3, $4, $5);`,
+      values
+    );
     console.log("Its over");
     return res.status(201).json({
-      "message": "business created successfully"
+      message: "business created successfully",
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json("Failed to create business")
+    res.status(500).json("Failed to create business");
   }
-}
+};
 
 const updateBusiness = async (req, res) => {
   const { user_id } = req.body;
@@ -67,9 +76,6 @@ const updateBusiness = async (req, res) => {
   }
 };
 
-
-
-
 const getBusinessProductsPost = async (req, res) => {
   try {
     const user = req.user;
@@ -117,20 +123,22 @@ const addProductPost = async (req, res) => {
       locationId,
     } = req.body;
 
-    if(user.accountType !== "business"){
-        return res.status(403).json({message: "Only business are allowed to post products"})
+    if (user.accountType !== "business") {
+      return res
+        .status(403)
+        .json({ message: "Only business are allowed to post products" });
     }
 
     const businessSearch = await pool.query(
-        `SELECT business_id from businesses where user_id = $1`,
-        [user.userId]
-      );
+      `SELECT business_id from businesses where user_id = $1`,
+      [user.userId]
+    );
 
     if (businessSearch.rowCount == 0) {
-      return res.status(404).json({message: "Business not found"})
+      return res.status(404).json({ message: "Business not found" });
     }
 
-    const businessId = businessSearch.rows[0].business_id
+    const businessId = businessSearch.rows[0].business_id;
 
     const insertQuery = `INSERT INTO listings (seller_id,business_id,category_id,subcategory_id,title,description,price,currency,condition,is_negotiable,can_deliver,stock,attributes,location_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`;
     const results = await pool.query(insertQuery, [
@@ -185,12 +193,17 @@ const updateProductPost = async (req, res) => {
         .json({ message: "Create a business account to update a product" });
     }
 
-    const businessId = businessSearch.rows[0].business_id
+    const businessId = businessSearch.rows[0].business_id;
 
-    const productCheck = await pool.query(`SELECT listings_id from listings where listings_id=$1 AND business_id=$2`,[productId,businessId])
+    const productCheck = await pool.query(
+      `SELECT listings_id from listings where listings_id=$1 AND business_id=$2`,
+      [productId, businessId]
+    );
 
-    if(productCheck.rowCount === 0){
-        return res.status(403).json({message: "You are not the owner of the product"})
+    if (productCheck.rowCount === 0) {
+      return res
+        .status(403)
+        .json({ message: "You are not the owner of the product" });
     }
 
     const orderCheck = await pool.query(
@@ -198,14 +211,17 @@ const updateProductPost = async (req, res) => {
       [productId]
     );
 
-    if(orderCheck.rowCount > 0){
-        const checkOrderStatus = orderCheck.rows.some(
-            (order) => order.orderStatus !== "delivered" && order.orderStatus !== "cancelled"
-        )
+    if (orderCheck.rowCount > 0) {
+      const checkOrderStatus = orderCheck.rows.some(
+        (order) =>
+          order.orderStatus !== "delivered" && order.orderStatus !== "cancelled"
+      );
 
-        if(checkOrderStatus){
-            return res.status(400).json({message: "Cannot update product. It has active or pending orders."})
-        }
+      if (checkOrderStatus) {
+        return res.status(400).json({
+          message: "Cannot update product. It has active or pending orders.",
+        });
+      }
     }
 
     const updateQuery = await pool.query(
@@ -245,14 +261,16 @@ const deleteProductPost = async (req, res) => {
       return res.status(404).json({ message: "Create a business account " });
     }
 
-    const businessId = businessSearch.rows[0].business_id
+    const businessId = businessSearch.rows[0].business_id;
     const productSearch = await pool.query(
       `SELECT listing_id from listings where listing_id=$1 AND business_id = $2`,
-      [productId,businessId]
+      [productId, businessId]
     );
 
     if (productSearch.rowCount === 0) {
-      return res.status(404).json({ message: "Product does not belong to you" });
+      return res
+        .status(404)
+        .json({ message: "Product does not belong to you" });
     }
 
     const checkProduct = await pool.query(
@@ -282,33 +300,70 @@ const deleteProductPost = async (req, res) => {
   }
 };
 
-const getBusinessTransactions = async(req,res)=>{
+const getBusinessOrders = async (req, res) => {
   try {
-    
+    const user = req.user;
+    const businessSearch = await pool.query(
+      `SELECT business_id from businesses where user_id=$1`,
+      user.userId
+    );
+    if (businessSearch.rows.length === 0) {
+      return res.status(400).json({ message: "Business not found" });
+    }
+
+    const businessId = businessSearch.rows[0].business_id;
+
+    const query = `
+    SELECT ord.order_id,
+    ord.status,
+    ord.total_amount,
+    ord.currency,
+    ord.created_at,
+    oi.unit_price,
+    oi.quantity,
+    l.title,
+    l.listing_id AS product_id FROM orders ord JOIN order_items oi ON ord.order_id = oi.order_id
+    JOIN listings l ON oi.listing_id = l.listing_id WHERE l.business_id = $1 ORDER BY ord.created_at DESC
+    `;
+
+    const orders = await pool.query(query, [businessId]);
+    res.status(200).json({ orders: orders.rows });
   } catch (error) {
-    
+    res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
-// const getBusinessOrders = async(req,res)=>{
-//   try {
-//     const user = req.user
-//     const businessSearch = await pool.query(`SELECT business_id from businesses where user_id=$1`,user.userId)
-//     if(businessSearch.rows.length === 0){
-//       return res.status(400).json({message: "No such business"})
-//     }
+const getBusinessTransactions = async (req, res) => {
+  try {
+    const user = req.user;
 
-//     const getOrderDetailQuery = `SELECT ord.order_id,`
-//   } catch (error) {
-    
-//   }
-// }
+    const businessSearch = await pool.query(
+      `SELECT business_id FROM businesses where user_id= $1`,
+      [user.userId]
+    );
+
+    if (businessSearch.rowCount === 0) {
+      return res.status(404).json({ message: "Business not found" });
+    }
+
+    const businessId = businessSearch.rows[0].businessId;
+    const query = `SELECT payment_id,order_id,provider,provider_payment_id,amount,currenct,status,created_at FROM payments where recipient_type= 'business' AND recipient_id= $1 ORDER BY created_at DESC`;
+    const result = await pool.query(query, businessId);
+    res.status(200).json({
+      transactions: result.rows,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export {
   createBusiness,
   updateBusiness,
   getBusinessProductsPost,
+  getBusinessOrders,
   addProductPost,
   updateProductPost,
-  deleteProductPost
-}
+  deleteProductPost,
+  getBusinessTransactions
+};
