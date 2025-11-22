@@ -1,7 +1,6 @@
-import { Transaction } from "sequelize";
 import pool from "../config/database.js";
-
-const createBusiness = (req, res) => {
+import { validateVideoLength } from "../utils/cloudinaryHelper.js";
+const createBusiness = async (req, res) => {
   const { user_id, business_name, vat_number, subscription_plan, is_paid } =
     req.body;
 
@@ -14,13 +13,12 @@ const createBusiness = (req, res) => {
   ];
 
   try {
-    const qry = pool.query(
+    await pool.query(
       `INSERT INTO businesses(user_id, business_name, vat_number, subscription_plan, is_paid) VALUES ($1, $2, $3, $4, $5);`,
       values
     );
-    console.log("Its over");
     return res.status(201).json({
-      message: "business created successfully",
+      message: "Business created successfully",
     });
   } catch (error) {
     console.log(error);
@@ -63,7 +61,7 @@ const updateBusiness = async (req, res) => {
   const sql = `
     UPDATE businesses
     SET ${updates.join(", ")}
-    WHERE id = $${index}
+    WHERE user_id = $${index}
     RETURNING *;
   `;
 
@@ -89,11 +87,28 @@ const getBusinessProductsPost = async (req, res) => {
     }
 
     const businessId = businessSearch.rows[0].business_id;
+    const query = `
+      SELECT
+        l.*,
+        COALESCE(
+          json_agg(
+            jsonb_build_object(
+              'media_id', lm.listing_media_id,
+              'type', lm.media_type,
+              'url', lm.url,
+              'order', lm.sort_order
+            ) ORDER BY lm.sort_order
+          ) FILTER (WHERE lm.listing_media_id IS NOT NULL),
+          '[]'
+        ) AS media
+      FROM listings l
+      LEFT JOIN listing_media lm ON lm.listing_id = l.listings_id
+      WHERE l.business_id = $1
+      GROUP BY l.listings_id
+      ORDER BY l.created_at DESC
+    `;
 
-    const allProducts = await pool.query(
-      `SELECT * FROM listings where business_id=$1 ORDER BY created_at DESC`,
-      [businessId]
-    );
+    const allProducts = await pool.query(query, [businessId]);
 
     if (!allProducts.rows.length) {
       return res.status(200).json({ message: "You have no product on market" });
@@ -140,7 +155,31 @@ const addProductPost = async (req, res) => {
 
     const businessId = businessSearch.rows[0].business_id;
 
-    const insertQuery = `INSERT INTO listings (seller_id,business_id,category_id,subcategory_id,title,description,price,currency,condition,is_negotiable,can_deliver,stock,attributes,location_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`;
+    // handle file uploads
+    const files = req.files || [];
+    const images = files.filter((f) => f.mimetype.startsWith("image/"));
+    const videos = files.filter((f) => f.mimetype.startsWith("video/"));
+
+    if (images.length === 0) {
+      return res.status(400).json({ message: "Atleast one image is required" });
+    }
+
+    if (images.length > 4) {
+      return res
+        .status(400)
+        .json({ message: "Maximum of 4 images is allowed" });
+    }
+
+    if (videos.length > 1) {
+      return res.status(400).json({ message: "Only one video is allowed" });
+    }
+
+    const insertQuery = `
+      INSERT INTO listings
+        (seller_id, business_id, category_id, subcategory_id, title, description, price, currency, condition, is_negotiable, can_deliver, stock, attributes, location_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+      RETURNING listings_id
+    `;
     const results = await pool.query(insertQuery, [
       user.userId,
       businessId,
@@ -157,8 +196,57 @@ const addProductPost = async (req, res) => {
       attributes ? JSON.stringify(attributes) : "{}",
       locationId,
     ]);
+    const listingId = results.rows[0].listings_id;
 
-    res.json({ messsage: "Product added successfully" });
+    for (let i = 0; i < images.length; i++) {
+      await pool.query(
+        `INSERT INTO listing_media (listing_id,media_type,url,sort_order,metadata) VALUES ($1,$2,$3,$4,$5)`,
+        [
+          listingId,
+          "image",
+          images[i].path,
+          i,
+          JSON.stringify({ public_id: images[i].filename }),
+        ]
+      );
+    }
+
+    if (videos.length === 1) {
+      await validateVideoLength(videos[0].filename, 60);
+      await pool.query(
+        `INSERT INTO listing_media (listing_id,media_type,url,sort_order,metadata) VALUES ($1,$2,$3,$4,$5)`,
+        [
+          listingId,
+          "video",
+          videos[0].path,
+          images.length,
+          JSON.stringify({ public_id: videos[0].filename }),
+        ]
+      );
+    }
+
+    const productWithMedia = await pool.query(
+      `
+      SELECT l.*,
+        COALESCE(json_agg(jsonb_build_object(
+          'media_id', lm.listing_media_id,
+          'type', lm.media_type,
+          'url', lm.url,
+          'order', lm.sort_order
+        ) ORDER BY lm.sort_order) FILTER (WHERE lm.listing_media_id IS NOT NULL), '[]') as media
+      FROM listings l
+      LEFT JOIN listing_media lm ON lm.listing_id = l.listings_id
+      WHERE l.listings_id = $1
+      GROUP BY l.listings_id
+      LIMIT 1
+    `,
+      [listingId]
+    );
+
+    res.json({
+      messsage: "Product added successfully",
+      product: productWithMedia.rows[0],
+    });
   } catch (error) {
     return res.status(500).json({ messsage: "Internal server error" });
   }
@@ -224,25 +312,111 @@ const updateProductPost = async (req, res) => {
       }
     }
 
-    const updateQuery = await pool.query(
-      `UPDATE listings SET category_id=$1,subcategory_id=$2,title=$3,description=$4,price=$5,currency=$6,condition=$7,is_negotiable=$8,can_deliver=$9,stock=$10,attributes=$11 where listing_id=$12`,
+    const files = req.files;
+    const images = files.filter((f) => f.mimetype.startsWith("image/"));
+    const videos = files.filter((f) => f.mimetype.startsWith("video/"));
+
+    if (files.length > 0) {
+      if (images.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "Atleast one image is required" });
+      }
+
+      if (images.length > 4) {
+        return res
+          .status(400)
+          .json({ message: "Maximum of 4 images have reached" });
+      }
+
+      if (videos.length > 1) {
+        return res
+          .status(400)
+          .json({ message: "Maximum of one video have reached" });
+      }
+    }
+
+    await pool.query(
+      `UPDATE listings SET 
+        category_id = COALESCE($1, category_id),
+        subcategory_id = COALESCE($2, subcategory_id),
+        title = COALESCE($3, title),
+        description = COALESCE($4, description),
+        price = COALESCE($5, price),
+        currency = COALESCE($6, currency),
+        condition = COALESCE($7, condition),
+        is_negotiable = COALESCE($8, is_negotiable),
+        can_deliver = COALESCE($9, can_deliver),
+        stock = COALESCE($10, stock),
+        attributes = COALESCE($11, attributes),
+        updated_at = NOW()
+      WHERE listings_id = $12`,
       [
-        categoryId,
-        subcategoryId,
-        title,
-        description,
-        price,
-        currency,
-        condition,
-        isNegotiable,
-        canDeliver,
-        stock,
-        attributes,
+        categoryId || null,
+        subcategoryId || null,
+        title || null,
+        description || null,
+        price || null,
+        currency || null,
+        condition || null,
+        typeof isNegotiable === "undefined" ? null : isNegotiable,
+        typeof canDeliver === "undefined" ? null : canDeliver,
+        typeof stock === "undefined" ? null : stock,
+        attributes ? JSON.stringify(attributes) : null,
         productId,
       ]
     );
 
-    res.status(200).json({ message: "Product updated successfully" });
+    if (files.length > 0) {
+      await pool.query(`DELETE FROM listing_media WHERE listing_id = $1`, [
+        productId,
+      ]);
+
+      const updateMediaQuery = `INSERT INTO listing_media (listing_id, media_type, url, sort_order, metadata) VALUES ($1,$2,$3,$4,$5)`;
+
+      for (let i = 0; i < images.length; i++) {
+        await pool.query(updateMediaQuery, [
+          productId,
+          "image",
+          images[i].path,
+          i,
+          JSON.stringify({public_id:  images[i].filename})
+        ]);
+      }
+
+      if (videos.length === 1) {
+        await pool.query(updateMediaQuery, [
+          productId,
+          "video",
+          videos[0].path,
+          images.length,
+          JSON.stringify({public_id: videos[0].filename})
+        ]);
+      }
+    }
+
+    const updated = await pool.query(
+      `
+      SELECT l.*,
+        COALESCE(json_agg(jsonb_build_object(
+          'media_id', lm.listing_media_id,
+          'type', lm.media_type,
+          'url', lm.url,
+          'order', lm.sort_order
+        ) ORDER BY lm.sort_order) FILTER (WHERE lm.listing_media_id IS NOT NULL), '[]') as media
+      FROM listings l
+      LEFT JOIN listing_media lm ON lm.listing_id = l.listings_id
+      WHERE l.listings_id = $1
+      GROUP BY l.listings_id
+      LIMIT 1
+    `,
+      [productId]
+    );
+
+    res.status(200).json({
+      message: "Product updated successfully",
+      product: updated.rows[0],
+    });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
@@ -346,7 +520,7 @@ const getBusinessTransactions = async (req, res) => {
       return res.status(404).json({ message: "Business not found" });
     }
 
-    const businessId = businessSearch.rows[0].businessId;
+    const businessId = businessSearch.rows[0].business_id;
     const query = `SELECT payment_id,order_id,provider,provider_payment_id,amount,currenct,status,created_at FROM payments where recipient_type= 'business' AND recipient_id= $1 ORDER BY created_at DESC`;
     const result = await pool.query(query, businessId);
     res.status(200).json({
@@ -365,5 +539,5 @@ export {
   addProductPost,
   updateProductPost,
   deleteProductPost,
-  getBusinessTransactions
+  getBusinessTransactions,
 };
