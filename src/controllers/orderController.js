@@ -1,14 +1,16 @@
 import pool from "../config/database.js";
 
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const validateOrderData = (data) => {
   const errors = [];
 
   if (!data.totalAmount || data.totalAmount <= 0) {
-    errors.push("totalAmount is required and must be greater than 0");
+    errors.push("Ttotal amount is required and must be greater than 0");
   }
 
   if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
-    errors.push("items must be a non-empty array");
+    errors.push("Items must be a non-empty array");
   } else {
     data.items.forEach((item, index) => {
       if (!item.listingId)
@@ -37,10 +39,10 @@ export const createOrder = async (req, res) => {
 
     //validation
 
-    if (!totalAmount || Number(totalAmount) <= 0) {
-      return res
-        .status(400)
-        .json({ error: "The total amount should not be less than 0" });
+    const validationErrors = validateOrderData(req.body)
+
+    if(validationErrors.length > 0){
+      return res.status(400).json({errors: validationErrors})
     }
 
     if (!shippingAddressId) {
@@ -94,31 +96,36 @@ export const createOrder = async (req, res) => {
     const orderQueryResults = insertOrderQuery.rows[0];
     const insertOrderItemQuery = `INSERT INTO order_items (order_id,listing_id,quantity,unit_price,total_price) VALUES($1,$2,$3,$4,$5) RETURNING *`;
     const businessMapping = {};
+
+    //validate price from order and real total
+
+    let serverTotal = 0;
     for (const item of items) {
       const listingQuery = `SELECT listings_id,title,business_id,price,stock from listings where listings_id = $1 FOR UPDATE`;
-      const listingQueryResult = (await client).query(listingQuery, [
+      const listingQueryResult = await client.query(listingQuery, [
         item.listingId,
       ]);
 
       if (listingQueryResult.rows.length === 0) {
-        (await client).query("ROLLBACK");
+        await client.query("ROLLBACK");
         return res.status(400).json({ error: "No such product" });
       }
 
       const listing = listingQueryResult.rows[0];
       if (listing.stock < item.quantity) {
-        (await client).query("ROLLBACK");
+        await client.query("ROLLBACK");
         return res.status(400).json({ error: "Insufficient products" });
       }
 
       const realProductPrice = Number(listing.price);
       if (Math.abs(realProductPrice - Number(item.unit_price)) > 0.01) {
-        (await client).query("ROLLBACK");
+        await client.query("ROLLBACK");
         return res.status(400).json({ error: "Price mismatch" });
       }
 
       // insert order Items
       const totalPrice = realProductPrice * item.quantity;
+      serverTotal += totalPrice 
       const orderItems = await client.query(insertOrderItemQuery, [
         orderQueryResults.order_id,
         item.listingId,
@@ -127,8 +134,8 @@ export const createOrder = async (req, res) => {
         totalPrice,
       ]);
 
-      // deduct some products
-      (await client).query(
+      // deduct some products from stock
+      await client.query(
         `UPDATE listings SET stock = stock - $1 WHERE listings_id = $2`,
         [item.quantity, item.listingId]
       );
@@ -137,19 +144,22 @@ export const createOrder = async (req, res) => {
       const businessId = listing.business_id
 
       if(!businessMapping[businessId]){
-        businessMapping[businessId] = {totalAmount: 0, items: []}
+        businessMapping[businessId] = {total_amount: 0, items: []}
       }
 
       businessMapping[businessId].items.push({
-        orderItemId: orderItems.rows[0].order_item_id,
-        listingId: listing.listings_id,
+        order_item_id: orderItems.rows[0].order_item_id,
+        listing_id: listing.listings_id,
         quantity: item.quantity,
-        unitPrice: realProductPrice,
-        totalPrice: totalPrice,
-        listingTitle: listing.title
+        unit_price: realProductPrice,
+        total_price: totalPrice,
+        listing_title: listing.title
       })
-      businessMapping[businessId].totalAmount += totalPrice
+      businessMapping[businessId].total_amount += totalPrice
     }
+
+    //Update order total with server-calculated amount
+    await client.query(`UPDATE orders SET total_amount = $1 WHERE order_id = $2`,[serverTotal,orderQueryResults.order_id])
 
     await client.query("COMMIT")
     return res.status(201).json({
@@ -170,7 +180,7 @@ export const getOrders = async (req, res) => {
   try {
     const { userId, sellerId, status } = req.query;
     let query = `
-      SELECT o.*, u.username AS buyer, s.username AS seller
+      SELECT o.*, u.full_name AS buyer, s.full_name AS seller
       FROM orders o 
       LEFT JOIN users u ON o.user_id = u.user_id
       LEFT JOIN users s ON o.seller_id = s.user_id
@@ -211,12 +221,12 @@ export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!id || isNaN(id)) {
+    if (!id || !uuidRegex.test(id)) {
       return res.status(400).json({ error: "Invalid order ID" });
     }
 
     const orderQuery = `
-      SELECT o.*, u.username AS buyer, s.username AS seller
+      SELECT o.*, u.full_name AS buyer, s.full_name AS seller
       FROM orders o
       LEFT JOIN users u ON o.user_id = u.user_id
       LEFT JOIN users s ON o.seller_id = s.user_id
@@ -247,7 +257,7 @@ export const updateOrder = async (req, res) => {
     const { totalAmount, shippingAddressId, billingAddressId, status } =
       req.body;
 
-    if (!id || isNaN(id)) {
+    if (!id || !uuidRegex.test(id)) {
       return res.status(400).json({ error: "Invalid order ID" });
     }
 
@@ -284,7 +294,7 @@ export const deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!id || isNaN(id)) {
+    if (!id || !uuidRegex.test(id)) {
       return res.status(400).json({ error: "Invalid order ID" });
     }
 

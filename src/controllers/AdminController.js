@@ -6,9 +6,6 @@ const getAdminStats = async(req, res) => {
 
 //Business Routes
 
-
-
-
 const getAllBusinesses = async (req, res) => {
   try {
     const result = await pool.query(
