@@ -20,7 +20,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /orders/create-order:
+ * /api/orders/create-order:
  *   post:
  *     summary: Create a new order
  *     tags: [Orders]
@@ -61,7 +61,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /orders/get-orders:
+ * /api/orders/get-orders:
  *   get:
  *     summary: Get all orders (admin or business depending on account)
  *     tags: [Orders]
@@ -85,7 +85,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /orders/get-order/{id}:
+ * /api/orders/get-order/{id}:
  *   get:
  *     summary: Get order details by ID
  *     tags: [Orders]
@@ -104,7 +104,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /orders/update-order/{id}:
+ * /api/orders/update-order/{id}:
  *   put:
  *     summary: Update an order
  *     tags: [Orders]
@@ -138,7 +138,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /orders/delete-order/{id}:
+ * /api/orders/delete-order/{id}:
  *   delete:
  *     summary: Delete an order by ID
  *     tags: [Orders]
@@ -157,7 +157,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /orders/get-orders/stats:
+ * /api/orders/get-orders/stats:
  *   get:
  *     summary: Get order statistics
  *     tags: [Orders]

@@ -18,7 +18,7 @@ const router = express.Router();
  *       scheme: bearer
  *       bearerFormat: JWT
  *
- * /admin/stats:
+ * /api/admin/stats:
  *   get:
  *     summary: Get admin dashboard statistics
  *     tags: [Admin]
@@ -28,7 +28,7 @@ const router = express.Router();
  *       200:
  *         description: Admin stats
  *
- * /admin/businesses:
+ * /api/admin/businesses:
  *   get:
  *     summary: List all businesses
  *     tags: [Admin]
@@ -48,7 +48,7 @@ const router = express.Router();
  *       200:
  *         description: List of businesses
  *
- * /admin/business/{userId}:
+ * /api/admin/business/{userId}:
  *   get:
  *     summary: Get a business profile
  *     tags: [Admin]
@@ -79,7 +79,7 @@ const router = express.Router();
  *       200:
  *         description: Business deleted
  *
- * /admin/business/{businessId}/suspend:
+ * /api/admin/business/{businessId}/suspend:
  *   post:
  *     summary: Suspend a business
  *     tags: [Admin]
@@ -94,7 +94,7 @@ const router = express.Router();
  *       200:
  *         description: Business suspended
  *
- * /admin/business/{businessId}/activate:
+ * /api/admin/business/{businessId}/activate:
  *   post:
  *     summary: Activate a business
  *     tags: [Admin]
@@ -109,7 +109,7 @@ const router = express.Router();
  *       200:
  *         description: Business activated
  *
- * /admin/users:
+ * /api/admin/users:
  *   get:
  *     summary: List all users
  *     tags: [Admin]
@@ -129,7 +129,7 @@ const router = express.Router();
  *       200:
  *         description: List of users
  *
- * /admin/user/{userId}:
+ * /api/admin/user/{userId}:
  *   get:
  *     summary: Get user details
  *     tags: [Admin]
@@ -145,7 +145,7 @@ const router = express.Router();
  *       200:
  *         description: User details
  *
- * /admin/user/{userId}/ban:
+ * /api/admin/user/{userId}/ban:
  *   post:
  *     summary: Ban a user
  *     tags: [Admin]
@@ -160,7 +160,7 @@ const router = express.Router();
  *       200:
  *         description: User banned
  *
- * /admin/user/{userId}/unban:
+ * /api/admin/user/{userId}/unban:
  *   post:
  *     summary: Unban a user
  *     tags: [Admin]
@@ -175,7 +175,7 @@ const router = express.Router();
  *       200:
  *         description: User unbanned
  *
- * /admin/listings:
+ * /api/admin/listings:
  *   get:
  *     summary: List all listings
  *     tags: [Admin]
@@ -189,7 +189,7 @@ const router = express.Router();
  *       200:
  *         description: List of listings
  *
- * /admin/listing/{listingId}/status:
+ * /api/admin/listing/{listingId}/status:
  *   post:
  *     summary: Update listing status
  *     tags: [Admin]
@@ -217,7 +217,7 @@ const router = express.Router();
  *       200:
  *         description: Listing updated
  *
- * /admin/listing/{listingId}:
+ * /api/admin/listing/{listingId}:
  *   delete:
  *     summary: Delete a listing
  *     tags: [Admin]
@@ -232,7 +232,7 @@ const router = express.Router();
  *       200:
  *         description: Listing deleted
  *
- * /admin/orders:
+ * /api/admin/orders:
  *   get:
  *     summary: List all orders
  *     tags: [Admin]
@@ -246,7 +246,7 @@ const router = express.Router();
  *       200:
  *         description: List of orders
  *
- * /admin/order/{orderId}:
+ * /api/admin/order/{orderId}:
  *   get:
  *     summary: Get order details
  *     tags: [Admin]
@@ -261,7 +261,7 @@ const router = express.Router();
  *       200:
  *         description: Order details
  *
- * /admin/order/{orderId}/status:
+ * /api/admin/order/{orderId}/status:
  *   post:
  *     summary: Update order status
  *     tags: [Admin]
@@ -289,7 +289,7 @@ const router = express.Router();
  *       200:
  *         description: Order status updated
  *
- * /admin/subscriptions:
+ * /api/admin/subscriptions:
  *   get:
  *     summary: List all subscriptions
  *     tags: [Admin]
@@ -299,7 +299,7 @@ const router = express.Router();
  *       200:
  *         description: Subscription list
  *
- * /admin/subscriptions/stats:
+ * /api/admin/subscriptions/stats:
  *   get:
  *     summary: Get subscription statistics
  *     tags: [Admin]
@@ -309,7 +309,7 @@ const router = express.Router();
  *       200:
  *         description: Subscription stats
  *
- * /admin/logs:
+ * /api/admin/logs:
  *   get:
  *     summary: List admin logs
  *     tags: [Admin]
@@ -319,7 +319,7 @@ const router = express.Router();
  *       200:
  *         description: Logs list
  *
- * /admin/notifications:
+ * /api/admin/notifications:
  *   get:
  *     summary: List admin notifications
  *     tags: [Admin]
@@ -356,7 +356,7 @@ const router = express.Router();
  *       201:
  *         description: Notification created
  *
- * /admin/notification/{notificationId}/read:
+ * /api/admin/notification/{notificationId}/read:
  *   post:
  *     summary: Mark a notification as read
  *     tags: [Admin]

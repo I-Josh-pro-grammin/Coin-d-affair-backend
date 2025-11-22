@@ -31,7 +31,7 @@ const router = express.Router();
 ============================================================================ */
 /**
  * @swagger
- * /business/create-business:
+ * /api/business/create-business:
  *   post:
  *     summary: Create a new business account
  *     tags: [Business]
@@ -75,7 +75,7 @@ const router = express.Router();
 ============================================================================ */
 /**
  * @swagger
- * /business:
+ * /api/business:
  *   patch:
  *     summary: Update business details
  *     tags: [Business]
@@ -121,7 +121,7 @@ const router = express.Router();
 ============================================================================ */
 /**
  * @swagger
- * /business/add-product:
+ * /api/business/add-product:
  *   post:
  *     summary: Add a product listing
  *     tags: [Business]
@@ -193,7 +193,7 @@ const router = express.Router();
 ============================================================================ */
 /**
  * @swagger
- * /business/update-product/{productId}:
+ * /api/business/update-product/{productId}:
  *   post:
  *     summary: Update an existing product
  *     tags: [Business]
@@ -250,7 +250,7 @@ const router = express.Router();
 ============================================================================ */
 /**
  * @swagger
- * /business/delete-product/{productId}:
+ * /api/business/delete-product/{productId}:
  *   delete:
  *     summary: Delete a product listing
  *     tags: [Business]
@@ -283,7 +283,7 @@ const router = express.Router();
 ============================================================================ */
 /**
  * @swagger
- * /business/business-profile:
+ * /api/business/business-profile:
  *   get:
  *     summary: Get the business profile
  *     tags: [Business]

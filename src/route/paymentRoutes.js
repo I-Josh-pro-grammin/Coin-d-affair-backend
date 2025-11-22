@@ -6,7 +6,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /checkout-session:
+ * /api/checkout-session:
  *   post:
  *     summary: Create Stripe checkout session (logged-in or guest)
  *     tags: [Payments]
@@ -38,7 +38,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /webhook:
+ * /api/webhook:
  *   post:
  *     summary: Stripe webhook for payment events
  *     tags: [Payments]

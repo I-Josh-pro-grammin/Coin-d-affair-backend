@@ -9,7 +9,7 @@ const router = express.Router();
  *   - name: Category
  *     description: All category-related endpoints
  *
- * /category:
+ * /api/category:
  *   get:
  *     summary: Get all categories with subcategories
  *     tags: [Category]
@@ -17,7 +17,7 @@ const router = express.Router();
  *       200:
  *         description: List of categories
  *
- * /category/create-category:
+ * /api/category/create-category:
  *   post:
  *     summary: Create a new category (admin only)
  *     tags: [Category]
@@ -36,7 +36,7 @@ const router = express.Router();
  *       201:
  *         description: Category created
  *
- * /category/create-subcategory:
+ * /api/category/create-subcategory:
  *   post:
  *     summary: Create a new subcategory (admin only)
  *     tags: [Category]
@@ -57,7 +57,7 @@ const router = express.Router();
  *       201:
  *         description: Subcategory created
  *
- * /category/slug/{categorySlug}/subcategories:
+ * /api/category/slug/{categorySlug}/subcategories:
  *   get:
  *     summary: Get all subcategories for a category by slug
  *     tags: [Category]
