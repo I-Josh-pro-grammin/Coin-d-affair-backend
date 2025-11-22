@@ -1,5 +1,7 @@
 import pool from "../config/database.js";
 import { validateVideoLength } from "../utils/cloudinaryHelper.js";
+
+
 const createBusiness = async (req, res) => {
   const { user_id, business_name, vat_number, subscription_plan, is_paid } =
     req.body;
