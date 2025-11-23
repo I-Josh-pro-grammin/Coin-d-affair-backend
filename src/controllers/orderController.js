@@ -73,12 +73,12 @@ export const createOrder = async (req, res) => {
       `SELECT address_id from addresses where address_id = $1`,
       [shippingAddressId]
     );
-    if (shippingAddressCheck.rows.length === 0){
+    if (shippingAddressCheck.rows.length === 0) {
       return res
         .status(400)
         .json({ message: "Shipping address not found" })
     }
-      await client.query("BEGIN");
+    await client.query("BEGIN");
     const insertOrderQuery = await client.query(
       `INSERT INTO orders (user_id,total_amount,currency,status,shipping_address_id,is_guest) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
       [
@@ -136,8 +136,8 @@ export const createOrder = async (req, res) => {
       // bussinessMapping
       const businessId = listing.business_id
 
-      if(!businessMapping[businessId]){
-        businessMapping[businessId] = {totalAmount: 0, items: []}
+      if (!businessMapping[businessId]) {
+        businessMapping[businessId] = { totalAmount: 0, items: [] }
       }
 
       businessMapping[businessId].items.push({
@@ -160,8 +160,8 @@ export const createOrder = async (req, res) => {
     })
   } catch (error) {
     await client.query("ROLLBACK")
-    res.status(500).json({message: "Internal server error"})
-  }finally{
+    res.status(500).json({ message: "Internal server error" })
+  } finally {
     client.release()
   }
 };
@@ -170,7 +170,11 @@ export const getOrders = async (req, res) => {
   try {
     const { userId, sellerId, status } = req.query;
     let query = `
-      SELECT o.*, u.username AS buyer, s.username AS seller
+      SELECT o.*, u.username AS buyer, s.username AS seller,
+      (SELECT json_agg(json_build_object('listing_title', l.title, 'quantity', oi.quantity)) 
+       FROM order_items oi 
+       JOIN listings l ON oi.listing_id = l.listings_id 
+       WHERE oi.order_id = o.order_id) as items
       FROM orders o 
       LEFT JOIN users u ON o.user_id = u.user_id
       LEFT JOIN users s ON o.seller_id = s.user_id

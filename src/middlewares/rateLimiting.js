@@ -2,10 +2,24 @@ import rateLimit from "express-rate-limit";
 import fs from "fs"
 import path from "path"
 
-function logRateLimit(ip,route){
-    const log =`[${new Date().toISOString}] RATE LIMIT: ${ip} on route ${route}`
-    fs.appendFileSync(path.join(process.cwd),"Logs","Rate-limiting.log",log)
+function ensureLogsDir() {
+    const logsDir = path.join(process.cwd(), "Logs");
+    if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+    }
 }
+
+function logRateLimit(ip, route) {
+    ensureLogsDir();
+
+    const log = `[${new Date().toISOString()}] RATE LIMIT: ${ip} on route ${route}\n`;
+
+    fs.appendFileSync(
+        path.join(process.cwd(), "Logs", "Rate-limiting.log"),
+        log
+    );
+}
+
 
 function createRateLimiting({windowMs,max,message,routeName}){
     return rateLimit({
