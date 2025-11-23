@@ -41,7 +41,7 @@ const register = async (req, res) => {
     );
 
     transporter.sendMail({
-      from: `"Coin d'affaire" <gravityz0071@gmail.com`,
+      from: `"Coin d'affaire" <gravityz0071@gmail.com>`,
       to: email,
       subject: "Verification Email",
       html: `<!doctype html>
