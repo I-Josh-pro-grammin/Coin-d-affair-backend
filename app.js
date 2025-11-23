@@ -12,6 +12,7 @@ import businessRoutes from './src/route/businessRoutes.js'
 import adminRoutes from './src/route/adminRoutes.js'
 import swaggerUi from 'swagger-ui-express'
 import swaggerSpec from './src/swagger.js'
+import swaggerUiDist from 'swagger-ui-dist'
 const app = express()
 const allowedOrigin = process.env.FRONTEND_URL || "*"
 
@@ -20,11 +21,18 @@ app.use(cors({
   credentials: true
 }))
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
 app.use(express.json())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
+
+const swaggerAssetPath = swaggerUiDist.getAbsoluteFSPath()
+app.use('/api/api-docs', express.static(swaggerAssetPath))
 app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
 app.use('/api', listingRoutes)
 app.use('/api', authRoutes)
 app.use('/api', paymentRoutes)
