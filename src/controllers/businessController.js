@@ -21,7 +21,6 @@ const createBusiness = async (req, res) => {
       `INSERT INTO businesses(user_id, business_name, vat_number, subscription_plan, is_paid) VALUES ($1, $2, $3, $4, $5);`,
       values
     );
-    await pool.query(`UPDATE users SET account_type='business' WHERE user_id=$1`,[user.userId])
     return res.status(201).json({
       message: "Business created successfully",
     });
