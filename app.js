@@ -13,7 +13,7 @@ import adminRoutes from './src/route/adminRoutes.js'
 import swaggerUi from 'swagger-ui-express'
 import swaggerSpec from './src/swagger.js'
 const app = express()
-const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:8080"
+const allowedOrigin = process.env.FRONTEND_URL || "*"
 
 app.use(cors({
   origin: allowedOrigin,
