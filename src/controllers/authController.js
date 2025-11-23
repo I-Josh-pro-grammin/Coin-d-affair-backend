@@ -125,7 +125,7 @@ const register = async (req, res) => {
 const verifyEmail = async (req, res) => {
   try {
     const { verifyToken } = req.params
-    const checkInDb = await pool.query(`UPDATE users SET is_verified=true, verifytoken=NULL where verifyToken = $1`, [verifyToken])
+    const checkInDb = await pool.query(`UPDATE users SET is_verified=true, verifytoken=NULL where verifyToken = $1 RETURNING *`, [verifyToken])
     if (!checkInDb.rows.length) {
       return res.status(400).json({ message: "Invalid verification link" })
     }
