@@ -358,7 +358,7 @@ const router = express.Router();
 
 
 
-router.post("/business/create-business", createBusiness);
+router.post("/business/create-business",protectedRoutes("user"), createBusiness);
 router.patch("/business/update-profile", protectedRoutes("business"), updateBusiness);
 router.post("/business/add-product", upload.array("media", 5), protectedRoutes("business"),checkSubscription, addProductPost);
 router.post("/business/update-product/:productId",protectedRoutes("business"), upload.array("media", 5), updateProductPost);
