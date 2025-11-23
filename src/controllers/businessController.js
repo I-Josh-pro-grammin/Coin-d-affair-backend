@@ -3,11 +3,12 @@ import { validateVideoLength } from "../utils/cloudinaryHelper.js";
 
 
 const createBusiness = async (req, res) => {
-  const { user_id, business_name, vat_number, subscription_plan, is_paid } =
+  const user = req.user
+  const {business_name, vat_number, subscription_plan, is_paid } =
     req.body;
 
   const values = [
-    user_id,
+    user.userId,
     business_name,
     vat_number,
     subscription_plan,
@@ -15,12 +16,12 @@ const createBusiness = async (req, res) => {
   ];
 
   try {
+
     await pool.query(
       `INSERT INTO businesses(user_id, business_name, vat_number, subscription_plan, is_paid) VALUES ($1, $2, $3, $4, $5);`,
       values
     );
-
-    await pool.query(`UPDATE users SET accountType='business' WHERE user_id=$1`,[user_id])
+    await pool.query(`UPDATE users SET accountType='business' WHERE user_id=$1`,[user.userId])
     return res.status(201).json({
       message: "Business created successfully",
     });
