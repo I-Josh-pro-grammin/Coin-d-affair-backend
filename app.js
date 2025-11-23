@@ -26,16 +26,15 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
 
 app.use(
-  '/',
+  '/api/api-docs',
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec, {
     customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
     customJs: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
     customfavIcon: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/favicon-32x32.png',
-    customSiteTitle: "Coin d'affaire API Docs",
+    customSiteTitle: 'Coin d\'affaire API Docs',
   })
 )
-
 app.use('/api', listingRoutes)
 app.use('/api', authRoutes)
 app.use('/api', paymentRoutes)
@@ -43,6 +42,6 @@ app.use("/api", orderRoutes)
 app.use("/api", businessRoutes)
 app.use('/api', cartRoutes)
 app.use('/api', categoryRoutes)
-app.use('/api/admin', adminRoutes)
+app.use('/api', adminRoutes)
 
 export default app;
