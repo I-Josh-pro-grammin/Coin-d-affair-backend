@@ -25,7 +25,7 @@ const register = async (req, res) => {
       return res.status(400).json({ message: "Account already exist" });
     }
     const emailVerifyToken = crypto.randomUUID();
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
+    const backendUrl = process.env.BACKEND_URL;
     const verifyUrl = `${backendUrl}/api/auth/verify/${emailVerifyToken}`;
     const hashedPassword = await hashPassword(password);
     await pool.query(
