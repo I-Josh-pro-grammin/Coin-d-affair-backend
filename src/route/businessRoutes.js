@@ -357,16 +357,15 @@ const router = express.Router();
  */
 
 
-router.use(protectedRoutes("business"));
 
 router.post("/business/create-business", createBusiness);
-router.patch("/business", protectedRoutes("business"), updateBusiness);
-router.post("/business/add-product", upload.array("media", 5), checkSubscription, addProductPost);
-router.post("/business/update-product/:productId", upload.array("media", 5), updateProductPost);
-router.delete("/business/delete-product/:productId", deleteProductPost);
-router.get("/business/business-profile", getBusinessProfile);
-router.get("/business/business-products-post", getBusinessProductsPost);
-router.get("/business/transactions", getBusinessTransactions);
-router.get("/business/business-orders", getBusinessOrders);
+router.patch("/business/update-profile", protectedRoutes("business"), updateBusiness);
+router.post("/business/add-product", upload.array("media", 5), protectedRoutes("business"),checkSubscription, addProductPost);
+router.post("/business/update-product/:productId",protectedRoutes("business"), upload.array("media", 5), updateProductPost);
+router.delete("/business/delete-product/:productId", protectedRoutes("business"),deleteProductPost);
+router.get("/business/business-profile",protectedRoutes("business"), getBusinessProfile);
+router.get("/business/business-products-post",protectedRoutes("business"), getBusinessProductsPost);
+router.get("/business/transactions", protectedRoutes("business"), getBusinessTransactions);
+router.get("/business/business-orders",protectedRoutes("business"), getBusinessOrders);
 
 export default router;

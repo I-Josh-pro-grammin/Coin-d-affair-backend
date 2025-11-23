@@ -12,6 +12,8 @@ import businessRoutes from './src/route/businessRoutes.js'
 import adminRoutes from './src/route/adminRoutes.js'
 import swaggerUi from 'swagger-ui-express'
 import swaggerSpec from './src/swagger.js'
+import path from 'path'
+import { fileURLToPath } from 'url'
 const app = express()
 const allowedOrigin = process.env.FRONTEND_URL || "*"
 
@@ -25,16 +27,17 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-app.use(
-  '/api/api-docs',
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec, {
-    customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
-    customJs: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
-    customfavIcon: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/favicon-32x32.png',
-    customSiteTitle: 'Coin d\'affaire API Docs',
-  })
-)
+
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// Serve static files from "public"
+app.use(express.static(path.join(__dirname, 'public')))
+app.get('/api/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json')
+  res.send(swaggerSpec)
+})
 app.use('/api', listingRoutes)
 app.use('/api', authRoutes)
 app.use('/api', paymentRoutes)
