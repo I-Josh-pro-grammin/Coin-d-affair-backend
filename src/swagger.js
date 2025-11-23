@@ -12,8 +12,8 @@ const options = {
 
     servers: [
       {
-        url: "http://localhost:500",
-        description: "Local server",
+        url: "https://coin-d-affaires-backend.vercel.app",
+        description: "Deployed server",
       },
     ],
 
