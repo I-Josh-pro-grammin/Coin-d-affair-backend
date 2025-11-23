@@ -19,6 +19,8 @@ const createBusiness = async (req, res) => {
       `INSERT INTO businesses(user_id, business_name, vat_number, subscription_plan, is_paid) VALUES ($1, $2, $3, $4, $5);`,
       values
     );
+
+    await pool.query(`UPDATE users SET accountType='business' WHERE user_id=$1`,[user_id])
     return res.status(201).json({
       message: "Business created successfully",
     });
@@ -314,7 +316,7 @@ const updateProductPost = async (req, res) => {
       }
     }
 
-    const files = req.files;
+    const files = req.files || [];
     const images = files.filter((f) => f.mimetype.startsWith("image/"));
     const videos = files.filter((f) => f.mimetype.startsWith("video/"));
 
@@ -481,7 +483,7 @@ const getBusinessOrders = async (req, res) => {
     const user = req.user;
     const businessSearch = await pool.query(
       `SELECT business_id from businesses where user_id=$1`,
-      user.userId
+      [user.userId]
     );
     if (businessSearch.rows.length === 0) {
       return res.status(400).json({ message: "Business not found" });
@@ -523,7 +525,7 @@ const getBusinessTransactions = async (req, res) => {
     }
 
     const businessId = businessSearch.rows[0].business_id;
-    const query = `SELECT payment_id,order_id,provider,provider_payment_id,amount,currenct,status,created_at FROM payments where recipient_type= 'business' AND recipient_id= $1 ORDER BY created_at DESC`;
+    const query = `SELECT payment_id,order_id,provider,provider_payment_id,amount,currency,status,created_at FROM payments where recipient_type= 'business' AND recipient_id= $1 ORDER BY created_at DESC`;
     const result = await pool.query(query, businessId);
     res.status(200).json({
       transactions: result.rows,
