@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import pool from "../config/database.js";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 export const handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
@@ -17,14 +18,15 @@ export const handleStripeWebhook = async (req, res) => {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
+    const orderId = session.metadata.orderId
     const businessMapping = JSON.parse(session.metadata.businessMapping);
     for (const [businessId, listings] of Object.entries(businessMapping)) {
       const business = await pool.query(
         `SELECT stripe_account_id from businesses where business_id= $1`,
         [businessId]
       );
-      const businessAccountId = business.rows[0]?.stripe_account_id;
-      if (!businessAccountId) continue;
+      const stripeAccountId = business.rows[0]?.stripe_account_id;
+      if (!stripeAccountId) continue;
 
       //calculating business share
       const totalBusinessAmount = listings.reduce(
@@ -40,14 +42,14 @@ export const handleStripeWebhook = async (req, res) => {
       const transfer = await stripe.transfers.create({
         amount: Math.round(payoutAmount * 100),
         currency: "usd",
-        destination: businessAccountId,
+        destination: stripeAccountId,
         transfer_group: session.id,
       });
 
       // save payment transfers for business
       await pool.query(
-        `INSERT INTO payments(order_id,provider,provider_payment_id,amount,currency,status,recipient_type,recipient_id) VALUES($1,$2,$3,$4,$5,"succeeded","business",$6)`,
-        [orderId, "stripe", transfer.id, payoutAmount, "usd", businessId]
+        `INSERT INTO payments(order_id,provider,provider_payment_id,amount,currency,status,recipient_type,recipient_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [orderId, "stripe", transfer.id, payoutAmount, "usd","succeeded","business",businessId]
       );
 
       await pool.query(
@@ -56,4 +58,6 @@ export const handleStripeWebhook = async (req, res) => {
       );
     }
   }
+
+  res.json({ received: true})
 };

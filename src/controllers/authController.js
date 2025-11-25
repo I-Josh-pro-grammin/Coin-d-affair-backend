@@ -8,7 +8,7 @@ const toSafeUser = (user) => ({
   userId: user.user_id,
   name: user.full_name,
   email: user.email,
-  phone: user.phone,
+  phone: user.number,
   accountType: user.account_type,
   isVerified: user.is_verified,
 });
@@ -25,7 +25,7 @@ const register = async (req, res) => {
       return res.status(400).json({ message: "Account already exist" });
     }
     const emailVerifyToken = crypto.randomUUID();
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
+    const backendUrl = process.env.BACKEND_URL;
     const verifyUrl = `${backendUrl}/api/auth/verify/${emailVerifyToken}`;
     const hashedPassword = await hashPassword(password);
     await pool.query(
@@ -41,7 +41,7 @@ const register = async (req, res) => {
     );
 
     transporter.sendMail({
-      from: `"Coin d'affaire" <gravityz0071@gmail.com`,
+      from: `"Coin d'affaire" <gravityz0071@gmail.com>`,
       to: email,
       subject: "Verification Email",
       html: `<!doctype html>
@@ -125,7 +125,7 @@ const register = async (req, res) => {
 const verifyEmail = async (req, res) => {
   try {
     const { verifyToken } = req.params
-    const checkInDb = await pool.query(`UPDATE users SET is_verified=true, verifytoken=NULL where verifyToken = $1`, [verifyToken])
+    const checkInDb = await pool.query(`UPDATE users SET is_verified=true, verifytoken=NULL where verifyToken = $1 RETURNING *`, [verifyToken])
     if (!checkInDb.rows.length) {
       return res.status(400).json({ message: "Invalid verification link" })
     }
@@ -191,9 +191,35 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { fullName, phone } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const result = await pool.query(
+      `UPDATE users SET full_name = COALESCE($1, full_name), phone = COALESCE($2, phone) WHERE user_id = $3 RETURNING *`,
+      [fullName, phone, userId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "Profile updated successfully", user: toSafeUser(result.rows[0]) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export {
   register,
   verifyEmail,
   loginController,
   getCurrentUser,
+  updateProfile,
 }
