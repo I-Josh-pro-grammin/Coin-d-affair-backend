@@ -9,6 +9,7 @@ const storage = new CloudinaryStorage({
     folder: "products",
     resource_type: "auto",
     format: async (req, file) => (file.mimetype.includes("video") ? "mp4" : "jpg"),
+    chunk_size: 6000000, // 6MB chunks for better reliability
   },
 });
 

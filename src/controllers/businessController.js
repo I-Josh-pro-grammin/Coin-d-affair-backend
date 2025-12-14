@@ -252,7 +252,8 @@ const addProductPost = async (req, res) => {
       product: productWithMedia.rows[0],
     });
   } catch (error) {
-    return res.status(500).json({ messsage: "Internal server error" });
+    console.error("❌ addProductPost error:", error);
+    return res.status(500).json({ message: "Internal server error", details: error.message });
   }
 };
 

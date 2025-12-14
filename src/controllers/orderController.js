@@ -41,8 +41,8 @@ export const createOrder = async (req, res) => {
 
     const validationErrors = validateOrderData(req.body)
 
-    if(validationErrors.length > 0){
-      return res.status(400).json({errors: validationErrors})
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ errors: validationErrors })
     }
 
     if (!shippingAddressId) {
@@ -125,7 +125,7 @@ export const createOrder = async (req, res) => {
 
       // insert order Items
       const totalPrice = realProductPrice * item.quantity;
-      serverTotal += totalPrice 
+      serverTotal += totalPrice
       const orderItems = await client.query(insertOrderItemQuery, [
         orderQueryResults.order_id,
         item.listingId,
@@ -159,7 +159,7 @@ export const createOrder = async (req, res) => {
     }
 
     //Update order total with server-calculated amount
-    await client.query(`UPDATE orders SET total_amount = $1 WHERE order_id = $2`,[serverTotal,orderQueryResults.order_id])
+    await client.query(`UPDATE orders SET total_amount = $1 WHERE order_id = $2`, [serverTotal, orderQueryResults.order_id])
 
     await client.query("COMMIT")
     return res.status(201).json({
@@ -179,20 +179,16 @@ export const createOrder = async (req, res) => {
 export const getOrders = async (req, res) => {
   try {
     const { userId, sellerId, status } = req.query;
-    let query = `
-<<<<<<< HEAD
-      SELECT o.*, u.username AS buyer, s.username AS seller,
+    const query = `
+      SELECT o.*, u.full_name AS buyer, s.full_name AS seller,
       (SELECT json_agg(json_build_object('listing_title', l.title, 'quantity', oi.quantity)) 
        FROM order_items oi 
        JOIN listings l ON oi.listing_id = l.listings_id 
        WHERE oi.order_id = o.order_id) as items
-=======
-      SELECT o.*, u.full_name AS buyer, s.full_name AS seller
->>>>>>> f6a682bb31244572344d4c704dc87a80381b4212
       FROM orders o 
       LEFT JOIN users u ON o.user_id = u.user_id
       LEFT JOIN users s ON o.seller_id = s.user_id
-    `;
+      `;
     const params = [];
     const conditions = [];
 
@@ -239,7 +235,7 @@ export const getOrderById = async (req, res) => {
       LEFT JOIN users u ON o.user_id = u.user_id
       LEFT JOIN users s ON o.seller_id = s.user_id
       WHERE o.order_id = $1
-    `;
+      `;
     const { rows: orderRows } = await pool.query(orderQuery, [id]);
     if (orderRows.length === 0)
       return res.status(404).json({ error: "Order not found" });
@@ -249,7 +245,7 @@ export const getOrderById = async (req, res) => {
       FROM order_items oi
       LEFT JOIN listings l ON oi.listing_id = l.listings_id
       WHERE oi.order_id = $1
-    `;
+      `;
     const { rows: items } = await pool.query(itemsQuery, [id]);
 
     res.json({ ...orderRows[0], items });
@@ -272,12 +268,12 @@ export const updateOrder = async (req, res) => {
     const query = `
       UPDATE orders
       SET total_amount = COALESCE($1, total_amount),
-          shipping_address_id = COALESCE($2, shipping_address_id),
-          billing_address_id = COALESCE($3, billing_address_id),
-          status = COALESCE($4, status),
-          updated_at = NOW()
+      shipping_address_id = COALESCE($2, shipping_address_id),
+      billing_address_id = COALESCE($3, billing_address_id),
+      status = COALESCE($4, status),
+      updated_at = NOW()
       WHERE order_id = $5
-      RETURNING *;
+    RETURNING *;
     `;
 
     const { rows } = await pool.query(query, [
@@ -335,15 +331,15 @@ export const getOrderStats = async (req, res) => {
     }
 
     const statsQuery = `
-      SELECT 
-        COUNT(*) as total_orders,
-        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders,
-        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders,
-        COALESCE(SUM(total_amount), 0) as total_revenue,
-        COALESCE(AVG(total_amount), 0) as average_order_value
+    SELECT
+    COUNT(*) as total_orders,
+      COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
+      COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders,
+      COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders,
+      COALESCE(SUM(total_amount), 0) as total_revenue,
+      COALESCE(AVG(total_amount), 0) as average_order_value
       FROM orders 
-      ${whereClause}
+      ${ whereClause }
     `;
 
     const { rows } = await pool.query(statsQuery, params);

@@ -72,7 +72,7 @@ const getAllBusinesses = async (req, res) => {
     params.push(limit, offset);
     const query = `
       SELECT
-        b.business_id, b.business_name, b.subscription_plan, b.is_paid, b.total_sales, b.total_orders, b.rating,
+        b.business_id, b.business_name, b.subscription_plan, b.is_paid, b.total_orders, b.rating,
         u.user_id AS owner_user_id, u.full_name AS owner_name, u.email AS owner_email, b.created_at
       FROM businesses b
       JOIN users u ON b.user_id = u.user_id
@@ -88,7 +88,7 @@ const getAllBusinesses = async (req, res) => {
       countRes = await pool.query(`SELECT COUNT(*)::int as count FROM businesses`);
     } else {
       // simple count with same where
-      const countParams = [ `%${q.toLowerCase()}%`, `%${q.toLowerCase()}%` ];
+      const countParams = [`%${q.toLowerCase()}%`, `%${q.toLowerCase()}%`];
       countRes = await pool.query(`SELECT COUNT(*)::int as count FROM businesses b JOIN users u ON b.user_id = u.user_id WHERE LOWER(b.business_name) LIKE $1 OR LOWER(u.email) LIKE $2`, countParams);
     }
 
@@ -106,7 +106,7 @@ const getBusinessProfile = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.userId;
     const q = await pool.query(
-      `SELECT business_id, business_name, subscription_plan, total_orders, rating, total_sales, is_paid, created_at FROM businesses WHERE user_id = $1 LIMIT 1`,
+      `SELECT business_id, business_name, subscription_plan, is_paid, created_at FROM businesses WHERE user_id = $1 LIMIT 1`,
       [userId]
     );
     if (q.rowCount === 0) return res.status(404).json({ message: "Business not found" });
