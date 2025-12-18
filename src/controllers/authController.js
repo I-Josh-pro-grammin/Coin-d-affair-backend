@@ -28,8 +28,8 @@ const register = async (req, res) => {
     const frontendUrl = "http://localhost:8080" || process.env.FRONTEND_URL;
     const verifyUrl = `${frontendUrl}/auth/verify/${emailVerifyToken}`;
     const hashedPassword = await hashPassword(password);
-    await pool.query(
-      `INSERT INTO users (email,phone,password,full_name,account_type,verifyToken) values ($1,$2,$3,$4,$5,$6)`,
+    const userResult = await pool.query(
+      `INSERT INTO users (email,phone,password,full_name,account_type,verifyToken) values ($1,$2,$3,$4,$5,$6) RETURNING user_id`,
       [
         email,
         phone,
@@ -39,6 +39,20 @@ const register = async (req, res) => {
         emailVerifyToken
       ]
     );
+
+    const userId = userResult.rows[0].user_id;
+
+    if (accountType === 'business') {
+      const oneYearFromNow = new Date();
+      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+      await pool.query(
+        `INSERT INTO businesses (user_id, business_name, subscription_plan, subscription_period_end, is_paid)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, fullName + " Business", 'free', oneYearFromNow, false]
+      );
+    }
+
 
     // Send verification email with proper error handling
     try {

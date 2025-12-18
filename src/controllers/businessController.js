@@ -147,6 +147,7 @@ const addProductPost = async (req, res) => {
     canDeliver = canDeliver === 'true' || canDeliver === true;
 
     // Handle empty strings for UUIDs (Postgres doesn't like empty strings for UUID columns)
+    const cleanCategoryId = (categoryId && categoryId !== "") ? categoryId : null;
     const cleanSubcategoryId = (subcategoryId && subcategoryId !== "") ? subcategoryId : null;
     const cleanLocationId = (locationId && locationId !== "") ? locationId : null;
 
@@ -195,7 +196,7 @@ const addProductPost = async (req, res) => {
     const results = await pool.query(insertQuery, [
       user.userId,
       businessId,
-      categoryId,
+      cleanCategoryId,
       cleanSubcategoryId,
       title,
       description,

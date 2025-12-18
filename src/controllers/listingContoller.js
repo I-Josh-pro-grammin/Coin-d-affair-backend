@@ -3,7 +3,7 @@ import pool from "../config/database.js";
 const baseListingSelect = `
     SELECT 
         l.*,
-        a.location,
+        loc.name as location,
         c.category_name,
         c.slug as category_slug,
         sc.subcategory_name,
@@ -21,12 +21,11 @@ const baseListingSelect = `
           '[]'
         ) AS media
     FROM listings l 
-    LEFT JOIN addresses a ON l.location_id = a.address_id 
+    LEFT JOIN locations loc ON l.location_id = loc.location_id 
     LEFT JOIN categories c ON l.category_id = c.category_id
     LEFT JOIN subcategories sc ON l.subcategory_id = sc.subcategory_id
     LEFT JOIN businesses b ON l.business_id = b.business_id
     LEFT JOIN listing_media lm ON lm.listing_id = l.listings_id
-    WHERE 1=1
 `;
 
 const getListing = async (req, res) => {
@@ -45,14 +44,13 @@ const getListing = async (req, res) => {
     page = 1,
   } = req.query;
   try {
-    let baseQuery = baseListingSelect;
     let params = [];
     let idx = 1;
 
     let idQuery = `
         SELECT l.listings_id
         FROM listings l
-        LEFT JOIN addresses a ON l.location_id = a.address_id
+        LEFT JOIN locations loc ON l.location_id = loc.location_id
         WHERE 1=1
         `;
 
@@ -78,14 +76,8 @@ const getListing = async (req, res) => {
       idx += 2;
     }
 
-    if (lat && lon) {
-      idQuery += ` AND ST_DWithin(
-                a.location,
-                ST_MakePoint($${idx++}, $${idx++})::geography,
-                $${idx++}
-            )`;
-      params.push(lon, lat, radius);
-    }
+    idQuery += ` AND loc.name = $${idx++}`; // Spatial search disabled as locations table lacks coordinates
+    params.push(search); // Placeholder fix to avoid crash
 
     if (minPrice) {
       idQuery += ` AND l.price >= $${idx++}`;
@@ -125,7 +117,7 @@ const getListing = async (req, res) => {
     const finalQuery = `
         ${baseListingSelect}
         WHERE l.listings_id = ANY($1)
-        GROUP BY l.listings_id, a.location, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
+        GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
         ORDER BY l.created_at DESC
         `;
 
@@ -150,7 +142,7 @@ const getListingById = async (req, res) => {
     const query = `
       ${baseListingSelect}
       WHERE l.listings_id = $1
-      GROUP BY l.listings_id, a.location, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
+      GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
       LIMIT 1
     `;
     const result = await pool.query(query, [listingId]);
@@ -174,7 +166,7 @@ const getAllListings = async (req, res) => {
 
     const query = `
       ${baseListingSelect}
-      GROUP BY l.listings_id, a.location, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
+      GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
       ORDER BY l.created_at DESC
       LIMIT $1 OFFSET $2
     `;
