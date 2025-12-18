@@ -4,7 +4,7 @@ import { validateVideoLength } from "../utils/cloudinaryHelper.js";
 
 const createBusiness = async (req, res) => {
   const user = req.user
-  const {business_name, vat_number, subscription_plan, is_paid } =
+  const { business_name, vat_number, subscription_plan, is_paid } =
     req.body;
 
   const values = [
@@ -127,7 +127,7 @@ const getBusinessProductsPost = async (req, res) => {
 const addProductPost = async (req, res) => {
   const user = req.user;
   try {
-    const {
+    let {
       categoryId,
       subcategoryId,
       title,
@@ -141,6 +141,14 @@ const addProductPost = async (req, res) => {
       attributes,
       locationId,
     } = req.body;
+
+    // Convert string booleans to actual booleans
+    isNegotiable = isNegotiable === 'true' || isNegotiable === true;
+    canDeliver = canDeliver === 'true' || canDeliver === true;
+
+    // Handle empty strings for UUIDs (Postgres doesn't like empty strings for UUID columns)
+    const cleanSubcategoryId = (subcategoryId && subcategoryId !== "") ? subcategoryId : null;
+    const cleanLocationId = (locationId && locationId !== "") ? locationId : null;
 
     if (user.accountType !== "business") {
       return res
@@ -188,7 +196,7 @@ const addProductPost = async (req, res) => {
       user.userId,
       businessId,
       categoryId,
-      subcategoryId,
+      cleanSubcategoryId,
       title,
       description,
       price,
@@ -198,7 +206,7 @@ const addProductPost = async (req, res) => {
       canDeliver,
       stock,
       attributes ? JSON.stringify(attributes) : "{}",
-      locationId,
+      cleanLocationId,
     ]);
     const listingId = results.rows[0].listings_id;
 
@@ -385,7 +393,7 @@ const updateProductPost = async (req, res) => {
           "image",
           images[i].path,
           i,
-          JSON.stringify({public_id:  images[i].filename})
+          JSON.stringify({ public_id: images[i].filename })
         ]);
       }
 
@@ -395,7 +403,7 @@ const updateProductPost = async (req, res) => {
           "video",
           videos[0].path,
           images.length,
-          JSON.stringify({public_id: videos[0].filename})
+          JSON.stringify({ public_id: videos[0].filename })
         ]);
       }
     }
@@ -536,6 +544,16 @@ const getBusinessTransactions = async (req, res) => {
   }
 };
 
+const getLocations = async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT location_id AS id, name FROM locations ORDER BY name ASC`);
+    res.status(200).json({ locations: result.rows });
+  } catch (error) {
+    console.error("getLocations error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export {
   createBusiness,
   updateBusiness,
@@ -545,4 +563,5 @@ export {
   updateProductPost,
   deleteProductPost,
   getBusinessTransactions,
+  getLocations,
 };

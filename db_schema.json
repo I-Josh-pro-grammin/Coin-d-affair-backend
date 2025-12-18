@@ -1,0 +1,682 @@
+{
+  "geography_columns": [
+    {
+      "name": "f_table_catalog",
+      "type": "name"
+    },
+    {
+      "name": "f_table_schema",
+      "type": "name"
+    },
+    {
+      "name": "f_table_name",
+      "type": "name"
+    },
+    {
+      "name": "f_geography_column",
+      "type": "name"
+    },
+    {
+      "name": "coord_dimension",
+      "type": "integer"
+    },
+    {
+      "name": "srid",
+      "type": "integer"
+    },
+    {
+      "name": "type",
+      "type": "text"
+    }
+  ],
+  "geometry_columns": [
+    {
+      "name": "f_table_catalog",
+      "type": "character varying"
+    },
+    {
+      "name": "f_table_schema",
+      "type": "name"
+    },
+    {
+      "name": "f_table_name",
+      "type": "name"
+    },
+    {
+      "name": "f_geometry_column",
+      "type": "name"
+    },
+    {
+      "name": "coord_dimension",
+      "type": "integer"
+    },
+    {
+      "name": "srid",
+      "type": "integer"
+    },
+    {
+      "name": "type",
+      "type": "character varying"
+    }
+  ],
+  "spatial_ref_sys": [
+    {
+      "name": "srid",
+      "type": "integer"
+    },
+    {
+      "name": "auth_name",
+      "type": "character varying"
+    },
+    {
+      "name": "auth_srid",
+      "type": "integer"
+    },
+    {
+      "name": "srtext",
+      "type": "character varying"
+    },
+    {
+      "name": "proj4text",
+      "type": "character varying"
+    }
+  ],
+  "categories": [
+    {
+      "name": "category_id",
+      "type": "uuid"
+    },
+    {
+      "name": "category_name",
+      "type": "text"
+    },
+    {
+      "name": "slug",
+      "type": "text"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp without time zone"
+    },
+    {
+      "name": "name_fr",
+      "type": "text"
+    },
+    {
+      "name": "icon",
+      "type": "text"
+    },
+    {
+      "name": "description",
+      "type": "text"
+    }
+  ],
+  "carts": [
+    {
+      "name": "cart_id",
+      "type": "uuid"
+    },
+    {
+      "name": "user_id",
+      "type": "uuid"
+    },
+    {
+      "name": "session_token",
+      "type": "text"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone"
+    }
+  ],
+  "addresses": [
+    {
+      "name": "address_id",
+      "type": "uuid"
+    },
+    {
+      "name": "user_id",
+      "type": "uuid"
+    },
+    {
+      "name": "label",
+      "type": "text"
+    },
+    {
+      "name": "street",
+      "type": "text"
+    },
+    {
+      "name": "city",
+      "type": "text"
+    },
+    {
+      "name": "region",
+      "type": "text"
+    },
+    {
+      "name": "country",
+      "type": "text"
+    },
+    {
+      "name": "create_at",
+      "type": "timestamp without time zone"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp without time zone"
+    },
+    {
+      "name": "location",
+      "type": "USER-DEFINED"
+    }
+  ],
+  "cart_items": [
+    {
+      "name": "cart_item_id",
+      "type": "uuid"
+    },
+    {
+      "name": "cart_id",
+      "type": "uuid"
+    },
+    {
+      "name": "listing_id",
+      "type": "uuid"
+    },
+    {
+      "name": "sku_item_id",
+      "type": "uuid"
+    },
+    {
+      "name": "quantity",
+      "type": "integer"
+    },
+    {
+      "name": "price_at_add",
+      "type": "numeric"
+    },
+    {
+      "name": "added_at",
+      "type": "timestamp with time zone"
+    }
+  ],
+  "businesses": [
+    {
+      "name": "business_id",
+      "type": "uuid"
+    },
+    {
+      "name": "user_id",
+      "type": "uuid"
+    },
+    {
+      "name": "business_name",
+      "type": "text"
+    },
+    {
+      "name": "vat_number",
+      "type": "text"
+    },
+    {
+      "name": "subscription_plan",
+      "type": "text"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp without time zone"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp without time zone"
+    },
+    {
+      "name": "is_paid",
+      "type": "boolean"
+    },
+    {
+      "name": "subscription_start",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "subscription_period_end",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "total_orders",
+      "type": "integer"
+    },
+    {
+      "name": "rating",
+      "type": "numeric"
+    }
+  ],
+  "listing_media": [
+    {
+      "name": "listing_media_id",
+      "type": "uuid"
+    },
+    {
+      "name": "listing_id",
+      "type": "uuid"
+    },
+    {
+      "name": "media_type",
+      "type": "text"
+    },
+    {
+      "name": "url",
+      "type": "text"
+    },
+    {
+      "name": "metadata",
+      "type": "jsonb"
+    },
+    {
+      "name": "sort_order",
+      "type": "integer"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone"
+    }
+  ],
+  "listings": [
+    {
+      "name": "listings_id",
+      "type": "uuid"
+    },
+    {
+      "name": "seller_id",
+      "type": "uuid"
+    },
+    {
+      "name": "business_id",
+      "type": "uuid"
+    },
+    {
+      "name": "category_id",
+      "type": "uuid"
+    },
+    {
+      "name": "subcategory_id",
+      "type": "uuid"
+    },
+    {
+      "name": "title",
+      "type": "text"
+    },
+    {
+      "name": "description",
+      "type": "text"
+    },
+    {
+      "name": "price",
+      "type": "numeric"
+    },
+    {
+      "name": "currency",
+      "type": "character"
+    },
+    {
+      "name": "condition",
+      "type": "text"
+    },
+    {
+      "name": "is_negotiable",
+      "type": "boolean"
+    },
+    {
+      "name": "can_deliver",
+      "type": "boolean"
+    },
+    {
+      "name": "stock",
+      "type": "integer"
+    },
+    {
+      "name": "attributes",
+      "type": "jsonb"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "location_id",
+      "type": "uuid"
+    }
+  ],
+  "order_items": [
+    {
+      "name": "order_item_id",
+      "type": "uuid"
+    },
+    {
+      "name": "order_id",
+      "type": "uuid"
+    },
+    {
+      "name": "listing_id",
+      "type": "uuid"
+    },
+    {
+      "name": "sku_item_id",
+      "type": "uuid"
+    },
+    {
+      "name": "quantity",
+      "type": "integer"
+    },
+    {
+      "name": "unit_price",
+      "type": "numeric"
+    },
+    {
+      "name": "total_price",
+      "type": "numeric"
+    }
+  ],
+  "variant_types": [
+    {
+      "name": "variant_id",
+      "type": "uuid"
+    },
+    {
+      "name": "listing_id",
+      "type": "uuid"
+    },
+    {
+      "name": "variant_name",
+      "type": "text"
+    }
+  ],
+  "orders": [
+    {
+      "name": "order_id",
+      "type": "uuid"
+    },
+    {
+      "name": "user_id",
+      "type": "uuid"
+    },
+    {
+      "name": "seller_id",
+      "type": "uuid"
+    },
+    {
+      "name": "total_amount",
+      "type": "numeric"
+    },
+    {
+      "name": "currency",
+      "type": "character"
+    },
+    {
+      "name": "status",
+      "type": "text"
+    },
+    {
+      "name": "shipping_address_id",
+      "type": "uuid"
+    },
+    {
+      "name": "billing_address_id",
+      "type": "uuid"
+    },
+    {
+      "name": "is_guest",
+      "type": "boolean"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone"
+    }
+  ],
+  "sku_items": [
+    {
+      "name": "sku_item_id",
+      "type": "uuid"
+    },
+    {
+      "name": "listing_id",
+      "type": "uuid"
+    },
+    {
+      "name": "sku",
+      "type": "text"
+    },
+    {
+      "name": "price",
+      "type": "numeric"
+    },
+    {
+      "name": "stock",
+      "type": "integer"
+    },
+    {
+      "name": "attributes",
+      "type": "jsonb"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone"
+    }
+  ],
+  "variant_values": [
+    {
+      "name": "id",
+      "type": "uuid"
+    },
+    {
+      "name": "variant_type_id",
+      "type": "uuid"
+    },
+    {
+      "name": "value",
+      "type": "text"
+    }
+  ],
+  "subcategories": [
+    {
+      "name": "subcategory_id",
+      "type": "uuid"
+    },
+    {
+      "name": "category_id",
+      "type": "uuid"
+    },
+    {
+      "name": "subcategory_name",
+      "type": "text"
+    },
+    {
+      "name": "slug",
+      "type": "text"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp without time zone"
+    },
+    {
+      "name": "name_fr",
+      "type": "text"
+    }
+  ],
+  "payments": [
+    {
+      "name": "payment_id",
+      "type": "uuid"
+    },
+    {
+      "name": "order_id",
+      "type": "uuid"
+    },
+    {
+      "name": "user_id",
+      "type": "uuid"
+    },
+    {
+      "name": "provider",
+      "type": "text"
+    },
+    {
+      "name": "provider_payment_id",
+      "type": "text"
+    },
+    {
+      "name": "amount",
+      "type": "numeric"
+    },
+    {
+      "name": "currency",
+      "type": "character"
+    },
+    {
+      "name": "status",
+      "type": "text"
+    },
+    {
+      "name": "metadata",
+      "type": "jsonb"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "recipient_type",
+      "type": "text"
+    },
+    {
+      "name": "recipient_id",
+      "type": "uuid"
+    }
+  ],
+  "users": [
+    {
+      "name": "user_id",
+      "type": "uuid"
+    },
+    {
+      "name": "email",
+      "type": "text"
+    },
+    {
+      "name": "phone",
+      "type": "text"
+    },
+    {
+      "name": "password",
+      "type": "text"
+    },
+    {
+      "name": "full_name",
+      "type": "text"
+    },
+    {
+      "name": "is_verified",
+      "type": "boolean"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp without time zone"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp without time zone"
+    },
+    {
+      "name": "account_type",
+      "type": "USER-DEFINED"
+    },
+    {
+      "name": "verifytoken",
+      "type": "text"
+    },
+    {
+      "name": "is_active",
+      "type": "boolean"
+    }
+  ],
+  "admin_logs": [
+    {
+      "name": "log_id",
+      "type": "integer"
+    },
+    {
+      "name": "admin_user_id",
+      "type": "uuid"
+    },
+    {
+      "name": "action",
+      "type": "character varying"
+    },
+    {
+      "name": "resource_type",
+      "type": "character varying"
+    },
+    {
+      "name": "resource_id",
+      "type": "character varying"
+    },
+    {
+      "name": "meta",
+      "type": "jsonb"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp without time zone"
+    }
+  ],
+  "admin_notifications": [
+    {
+      "name": "notification_id",
+      "type": "integer"
+    },
+    {
+      "name": "title",
+      "type": "character varying"
+    },
+    {
+      "name": "body",
+      "type": "text"
+    },
+    {
+      "name": "target_user_id",
+      "type": "uuid"
+    },
+    {
+      "name": "data",
+      "type": "jsonb"
+    },
+    {
+      "name": "is_read",
+      "type": "boolean"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp without time zone"
+    }
+  ]
+}
