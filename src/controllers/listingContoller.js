@@ -76,9 +76,6 @@ const getListing = async (req, res) => {
       idx += 2;
     }
 
-    idQuery += ` AND loc.name = $${idx++}`; // Spatial search disabled as locations table lacks coordinates
-    params.push(search); // Placeholder fix to avoid crash
-
     if (minPrice) {
       idQuery += ` AND l.price >= $${idx++}`;
       params.push(minPrice);

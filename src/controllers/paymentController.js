@@ -4,7 +4,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const createCheckoutSession = async (req, res) => {
   try {
-    // const user = req.user;
     const { cartItems } = req.body;
 
     if (!Array.isArray(cartItems) || cartItems.length === 0) {
