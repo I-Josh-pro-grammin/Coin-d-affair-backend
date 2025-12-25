@@ -68,21 +68,8 @@ const createCheckoutSession = async (req, res) => {
     const method = paymentMethod || 'card';
 
     if (method === 'mobile_money') {
-      // Ensure mobile money capability configured or simulation enabled
-      if (process.env.STRIPE_MOBILE_MONEY_ENABLED !== 'true' && process.env.STRIPE_MOBILE_MONEY_SIMULATE !== 'true') {
-        console.error('Mobile money requested but not configured or simulation not enabled');
-        return res.status(400).json({ message: 'Mobile money not configured on server' });
-      }
       if (!phone) {
         return res.status(400).json({ message: 'Phone number required for mobile money' });
-      }
-
-      // If simulation is enabled and real mobile money is not configured, return a fake URL for UI testing
-      if (process.env.STRIPE_MOBILE_MONEY_SIMULATE === 'true' && process.env.STRIPE_MOBILE_MONEY_ENABLED !== 'true') {
-        const fakeSessionId = `sim_${Date.now()}`;
-        const fakeUrl = `${process.env.FRONTEND_URL}/mobile-money/simulate?sessionId=${fakeSessionId}&phone=${encodeURIComponent(phone)}`;
-        console.info('Returning simulated mobile-money checkout URL (simulation mode)');
-        return res.json({ url: fakeUrl, simulated: true });
       }
 
       // Map known local provider keys to Stripe payment_method_types when possible
@@ -92,21 +79,32 @@ const createCheckoutSession = async (req, res) => {
         pix: 'pix',
         promptpay: 'promptpay',
         paynow_zw: 'paynow',
-        mtn: null, // MTN Mobile Money is not a direct Stripe payment_method_type in many regions
+        // MTN/Airtel are not standard Stripe pm types in many regions
+        mtn: null,
         airtel: null
       };
 
-      const stripePmType = providerMap[paymentProvider?.toLowerCase()];
-      if (!stripePmType) {
-        // List of many Stripe-supported payment_method_types (excerpt)
+      const providerKey = paymentProvider?.toLowerCase();
+      const stripePmType = providerMap[providerKey];
+
+      const stripeConfigured = !!process.env.STRIPE_SECRET_KEY && process.env.STRIPE_MOBILE_MONEY_ENABLED === 'true';
+
+      // Prefer Stripe mobile-money when Stripe is configured and provider is supported
+      if (stripeConfigured && stripePmType) {
+        req._stripe_pm_type = stripePmType;
+      } else if (process.env.STRIPE_MOBILE_MONEY_SIMULATE === 'true') {
+        // Simulation fallback for development
+        const fakeSessionId = `sim_${Date.now()}`;
+        const fakeUrl = `${process.env.FRONTEND_URL}/mobile-money/simulate?sessionId=${fakeSessionId}&phone=${encodeURIComponent(phone)}`;
+        console.info('Returning simulated mobile-money checkout URL (simulation mode)');
+        return res.json({ url: fakeUrl, simulated: true });
+      } else {
         const supported = ['card','acss_debit','alipay','ideal','klarna','oxxo','p24','pix','paynow','promptpay','mobilepay','wechat_pay','swish'];
-        console.error(`Requested payment provider '${paymentProvider}' is not directly supported as a Stripe payment_method_type.`);
+        console.error(`Requested payment provider '${paymentProvider}' is not supported by Stripe or Stripe mobile-money not enabled.`);
         return res.status(400).json({
-          message: `Requested mobile-money provider '${paymentProvider}' is not supported by Stripe in this configuration. Supported payment_method_types include: ${supported.join(', ')}. If you need MTN/Airtel Mobile Money, enable a specific provider integration or use simulation.`
+          message: `Requested mobile-money provider '${paymentProvider}' is not supported by Stripe in this configuration. Enable Stripe mobile-money by setting STRIPE_MOBILE_MONEY_ENABLED=true and a supported provider (mobilepay/pix/paynow/etc.), or enable simulation for testing.`
         });
       }
-      // store the mapped Stripe payment method type for session construction
-      req._stripe_pm_type = stripePmType;
     }
 
     let session;

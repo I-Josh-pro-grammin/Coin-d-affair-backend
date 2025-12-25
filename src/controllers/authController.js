@@ -8,9 +8,10 @@ const toSafeUser = (user) => ({
   userId: user.user_id,
   name: user.full_name,
   email: user.email,
-  phone: user.number,
+  phone: user.phone,
   accountType: user.account_type,
   isVerified: user.is_verified,
+  location: user.location
 });
 
 const register = async (req, res) => {
@@ -25,7 +26,7 @@ const register = async (req, res) => {
       return res.status(400).json({ message: "Account already exist" });
     }
     const emailVerifyToken = crypto.randomUUID();
-    const frontendUrl = "http://localhost:8080" || process.env.FRONTEND_URL;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:8080";
     const verifyUrl = `${frontendUrl}/auth/verify/${emailVerifyToken}`;
     const hashedPassword = await hashPassword(password);
     const userResult = await pool.query(
@@ -216,8 +217,9 @@ const getCurrentUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ user: toSafeUser(result.rows[0]) });
+    res.status(200).json({ user: (result.rows[0]) });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

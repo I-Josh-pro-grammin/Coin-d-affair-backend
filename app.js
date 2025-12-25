@@ -21,13 +21,10 @@ import upload from './src/config/multer.js'
 import multer from 'multer'
 
 const app = express()
-const allowedOrigins = [
-  "http://localhost:8080",
-  "http://127.0.0.1:8080",
-  "https://coin-daffaires-france.vercel.app"
-];
+const allowedOrigin = [process.env.FRONTEND_URL, "http://localhost:8080"]
+
 app.use(cors({
-  origin: allowedOrigins,
+  origin: allowedOrigin,
   credentials: true
 }))
 

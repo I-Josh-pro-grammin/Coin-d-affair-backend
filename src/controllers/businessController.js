@@ -495,6 +495,7 @@ const getBusinessOrders = async (req, res) => {
       `SELECT business_id from businesses where user_id=$1`,
       [user.userId]
     );
+
     if (businessSearch.rows.length === 0) {
       return res.status(400).json({ message: "Business not found" });
     }
@@ -504,19 +505,24 @@ const getBusinessOrders = async (req, res) => {
     const query = `
     SELECT ord.order_id,
     ord.status,
+    ord.seller_id,
+    ord.user_id,
     ord.total_amount,
     ord.currency,
     ord.created_at,
     oi.unit_price,
     oi.quantity,
     l.title,
-    l.listing_id AS product_id FROM orders ord JOIN order_items oi ON ord.order_id = oi.order_id
-    JOIN listings l ON oi.listing_id = l.listing_id WHERE l.business_id = $1 ORDER BY ord.created_at DESC
+    l.listings_id AS product_id FROM orders ord JOIN order_items oi ON ord.order_id = oi.order_id
+    JOIN listings l ON oi.listing_id = l.listings_id WHERE l.business_id = $1 ORDER BY ord.created_at DESC
     `;
 
+
     const orders = await pool.query(query, [businessId]);
-    res.status(200).json({ orders: orders.rows });
+    const users = await pool.query('SELECT o.order_id, u.user_id, u.full_name, u.email FROM orders o JOIN users u ON o.user_id = u.user_id WHERE o.order_id = ANY($1)', [orders.rows.map(r => r.order_id)]);
+    res.status(200).json({ orders: orders.rows, users: users.rows });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
