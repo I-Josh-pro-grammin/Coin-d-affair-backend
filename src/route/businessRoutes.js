@@ -361,13 +361,14 @@ const router = express.Router();
 
 router.post("/business/create-business", protectedRoutes("user"), createBusiness);
 router.patch("/business/update-profile", protectedRoutes("business"), updateBusiness);
-router.post("/business/add-product", protectedRoutes("business"), upload.array("images", 5), checkSubscription, addProductPost);
-router.post("/business/update-product/:productId", protectedRoutes("business"), upload.array("images", 5), updateProductPost);
-router.delete("/business/delete-product/:productId", protectedRoutes("business"), deleteProductPost);
-router.get("/business/business-profile", protectedRoutes("business"), getBusinessProfile);
-router.get("/business/business-products-post", protectedRoutes("business"), getBusinessProductsPost);
-router.get("/business/transactions", protectedRoutes("business"), getBusinessTransactions);
-router.get("/business/business-orders", protectedRoutes("business"), getBusinessOrders);
+// Allow both 'business' and 'user' (individual sellers) to access product routes
+router.post("/business/add-product", protectedRoutes(["business", "user"]), upload.array("images", 5), checkSubscription, addProductPost);
+router.post("/business/update-product/:productId", protectedRoutes(["business", "user"]), upload.array("images", 5), updateProductPost);
+router.delete("/business/delete-product/:productId", protectedRoutes(["business", "user"]), deleteProductPost);
+router.get("/business/business-profile", protectedRoutes(["business", "user"]), getBusinessProfile);
+router.get("/business/business-products-post", protectedRoutes(["business", "user"]), getBusinessProductsPost);
+router.get("/business/transactions", protectedRoutes(["business", "user"]), getBusinessTransactions);
+router.get("/business/business-orders", protectedRoutes(["business", "user"]), getBusinessOrders);
 router.get("/business/locations", getLocations);
 
 export default router;
