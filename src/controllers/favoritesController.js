@@ -17,11 +17,11 @@ const addFavorite = async (req, res) => {
     }
 
     const insert = await pool.query(
-      'INSERT INTO favorites (user_id, listing_id) VALUES ($1, $2) RETURNING favorite_id',
+      'INSERT INTO favorites (user_id, listing_id) VALUES ($1, $2) RETURNING favorite_id, user_id, listing_id',
       [userId, listing_id]
     );
 
-    res.status(201).json({ favorite_id: insert.rows[0].favorite_id });
+    res.status(201).json({ favorite_id: insert.rows });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });

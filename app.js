@@ -111,7 +111,8 @@ app.use("/api", orderRoutes)
 app.use("/api", businessRoutes)
 app.use('/api', cartRoutes)
 app.use('/api', categoryRoutes)
-app.use('/api', adminRoutes)
+// Mount admin routes under /api/admin so admin-only middleware doesn't run for all /api routes
+app.use('/api/admin', adminRoutes)
 app.use('/api', favoritesRoutes)
 app.use('/users', userRoutes)
 

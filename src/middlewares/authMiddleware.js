@@ -21,7 +21,9 @@ function protectedRoutes(accountType = null) {
 
         try {
             const decoded = verifyToken(token)
-            if (allowedTypes && !allowedTypes.includes(decoded.accountType)) {
+            // Allow admins to access routes restricted to other roles
+            if (allowedTypes && !(allowedTypes.includes(decoded.accountType) || decoded.accountType === 'admin')) {
+                console.log('Forbidden: account type not allowed', allowedTypes, decoded.accountType)
                 return res.status(403).json({ message: "Forbidden" })
             }
             req.user = decoded;
