@@ -21,7 +21,10 @@ import upload from './src/config/multer.js'
 import multer from 'multer'
 
 const app = express()
-const allowedOrigin = [process.env.FRONTEND_URL, "http://localhost:8080"]
+const allowedOrigin = [
+  process.env.FRONTEND_URL,
+  "https://akaguriroo.com",
+  "http://localhost:8080"]
 
 app.use(cors({
   origin: allowedOrigin,
@@ -78,7 +81,7 @@ app.post('/api/_debug/checkout', async (req, res) => {
     if (!Array.isArray(cartItems)) return res.status(400).json({ message: 'cartItems required' });
     const ids = cartItems.map((i) => i.listingId);
     const listingsQuery = await pool.query(
-        `SELECT l.listings_id,l.price,l.title,l.business_id,l.currency FROM listings l LEFT JOIN businesses b ON l.business_id = b.business_id WHERE l.listings_id = ANY($1)`,
+      `SELECT l.listings_id,l.price,l.title,l.business_id,l.currency FROM listings l LEFT JOIN businesses b ON l.business_id = b.business_id WHERE l.listings_id = ANY($1)`,
       [ids]
     );
 

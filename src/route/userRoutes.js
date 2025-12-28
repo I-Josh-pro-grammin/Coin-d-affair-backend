@@ -1,5 +1,5 @@
 import express from 'express';
-import { getCustomersNumber, getBusinessNumbers } from '../controllers/UserController.js';
+import { getCustomersNumber, getBusinessNumbers, getCustomerNumbers } from '../controllers/UserController.js';
 import protectedRoutes from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -55,6 +55,7 @@ const router = express.Router();
 // router.get('/users', protectedRoutes(), getCustomersNumber);
 
 router.get('/', getCustomersNumber);
+router.get('/customers', getCustomerNumbers);
 router.get('/number', getBusinessNumbers);
 // router.get('/', protectedRoutes(), getCustomersNumber)
 

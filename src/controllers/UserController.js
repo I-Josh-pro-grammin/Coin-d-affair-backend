@@ -34,6 +34,16 @@ const getCustomersNumber = async (req, res) => {
   }
 };
 
+const getCustomerNumbers = async (req, res) => {
+  try {
+    const customers = await pool.query("SELECT full_name FROM users WHERE account_type='user'", []);
+    res.status(200).json({customers: customers.rows.length});
+  } catch (error) {
+    console.log(error);
+    res.status(404).json({"message": "couldn't fetch the users number"});
+  }
+}
+
 const getBusinessNumbers = async (req, res) => {
   try {
     const businesses = await pool.query("SELECT full_name FROM users WHERE account_type='business'", []);
@@ -47,5 +57,6 @@ const getBusinessNumbers = async (req, res) => {
 export {
   getCustomers,
   getCustomersNumber, 
-  getBusinessNumbers
+  getBusinessNumbers,
+  getCustomerNumbers
 };
