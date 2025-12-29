@@ -389,6 +389,7 @@ router.get("/users", adminLogger("list_users"), Admin.getAllUsers);
 router.get("/user/:userId", adminLogger("get_user"), Admin.getUserDetails);
 router.post("/user/:userId/ban", adminLogger("ban_user"), Admin.banUser);
 router.post("/user/:userId/unban", adminLogger("unban_user"), Admin.unbanUser);
+router.delete("/user/:userId", adminLogger("delete_user"), Admin.deleteUser);
 
 // Pending sellers / verification
 router.get('/sellers/pending', adminLogger('list_pending_sellers'), Admin.getPendingSellers);

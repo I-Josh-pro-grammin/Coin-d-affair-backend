@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import bodyParser from "body-parser"
@@ -11,6 +12,7 @@ import categoryRoutes from './src/route/categoryRoutes.js'
 import businessRoutes from './src/route/businessRoutes.js'
 import adminRoutes from './src/route/adminRoutes.js'
 import userRoutes from './src/route/userRoutes.js'
+import verificationRoutes from './src/route/verificationRoutes.js'
 import favoritesRoutes from './src/route/favoritesRoutes.js'
 import swaggerUi from 'swagger-ui-express'
 import swaggerSpec from './src/swagger.js'
@@ -26,6 +28,7 @@ const allowedOrigin = [
   "https://akaguriroo.com",
   "http://localhost:8080"
 ]
+
 
 app.use(cors({
   origin: allowedOrigin,
@@ -115,6 +118,7 @@ app.use("/api", orderRoutes)
 app.use("/api", businessRoutes)
 app.use('/api', cartRoutes)
 app.use('/api', categoryRoutes)
+app.use('/api', verificationRoutes)
 // Mount admin routes under /api/admin so admin-only middleware doesn't run for all /api routes
 app.use('/api/admin', adminRoutes)
 app.use('/api', favoritesRoutes)
@@ -142,5 +146,34 @@ app.use((error, req, res, next) => {
     error: process.env.NODE_ENV === "development" ? error.message : undefined
   });
 });
+
+// Serve static files (SPA Support)
+import { runMigrations } from './src/utils/dbMigrate.js';
+import process from 'process';
+
+// Serve static files (SPA Support)
+// Serve static files (SPA Support)
+app.get(/(.*)/, (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Check if app.js is the entry point (Render runs 'node app.js')
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const PORT = process.env.PORT || 10000;
+  const startApp = async () => {
+    try {
+      await runMigrations();
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server started from app.js on port ${PORT}`);
+      });
+    } catch (error) {
+      console.error("Failed to start server from app.js:", error);
+    }
+  };
+  startApp();
+}
 
 export default app;
