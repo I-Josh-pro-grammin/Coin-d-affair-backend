@@ -217,7 +217,7 @@ const getCurrentUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ user: (result.rows[0]) });
+    res.status(200).json({ user: toSafeUser(result.rows[0]) });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
