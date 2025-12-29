@@ -243,6 +243,35 @@ const unbanUser = async (req, res) => {
   }
 };
 
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Check if user exists
+    const user = await pool.query(`SELECT user_id FROM users WHERE user_id = $1`, [userId]);
+    if (user.rowCount === 0) return res.status(404).json({ message: "User not found" });
+
+    // Delete related data first (Manual Cascade or rely on DB - safer to do manual if constraints aren't cascade)
+    // Deleting businesses owned by user
+    const userBusinesses = await pool.query(`SELECT business_id FROM businesses WHERE user_id = $1`, [userId]);
+    for (const business of userBusinesses.rows) {
+      // This logic duplicates deleteBusiness roughly
+      await pool.query(`DELETE FROM listing_media WHERE listing_id IN (SELECT listings_id FROM listings WHERE business_id = $1)`, [business.business_id]);
+      await pool.query(`DELETE FROM listings WHERE business_id = $1`, [business.business_id]);
+      await pool.query(`DELETE FROM businesses WHERE business_id = $1`, [business.business_id]);
+    }
+
+    // Delete user
+    await pool.query(`DELETE FROM users WHERE user_id = $1`, [userId]);
+
+    if (req.adminLog) await req.adminLog("delete_user", { resourceType: "user", resourceId: userId });
+    return res.status(200).json({ message: "User deleted successfully" });
+  } catch (err) {
+    console.error("deleteUser error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // ------------------- 4. LISTINGS MANAGEMENT -------------------
 const getAllListings = async (req, res) => {
   try {
@@ -497,6 +526,7 @@ export {
   getUserDetails,
   banUser,
   unbanUser,
+  deleteUser,
   getAllListings,
   updateListingStatus,
   deleteListing,

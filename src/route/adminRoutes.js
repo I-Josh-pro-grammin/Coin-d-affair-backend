@@ -389,6 +389,7 @@ router.get("/users", adminLogger("list_users"), Admin.getAllUsers);
 router.get("/user/:userId", adminLogger("get_user"), Admin.getUserDetails);
 router.post("/user/:userId/ban", adminLogger("ban_user"), Admin.banUser);
 router.post("/user/:userId/unban", adminLogger("unban_user"), Admin.unbanUser);
+router.delete("/user/:userId", adminLogger("delete_user"), Admin.deleteUser);
 
 // listings
 router.get("/listings", adminLogger("list_listings"), Admin.getAllListings);
