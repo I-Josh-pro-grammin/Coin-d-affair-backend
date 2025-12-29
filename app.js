@@ -146,7 +146,7 @@ app.use((error, req, res, next) => {
 });
 
 // Serve static files (SPA Support)
-app.get('*', (req, res, next) => {
+app.get(/(.*)/, (req, res, next) => {
   if (req.path.startsWith('/api')) {
     return next(); // Let 404 handler deal with missing APIs
   }
