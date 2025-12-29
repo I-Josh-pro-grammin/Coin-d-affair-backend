@@ -16,7 +16,7 @@ const toSafeUser = (user) => ({
 });
 
 const register = async (req, res) => {
-  const { fullName, email, password, accountType, phone } = req.body;
+  const { fullName, email, password, accountType, phone, idType, idNumber, whatsapp, locationCity, businessName } = req.body;
   try {
     const existingEmail = await pool.query(
       `SELECT user_id FROM users where email = $1`,
@@ -30,8 +30,10 @@ const register = async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:8080";
     const verifyUrl = `${frontendUrl}/auth/verify/${emailVerifyToken}`;
     const hashedPassword = await hashPassword(password);
+
     // New column `verification_status` will be set to 'pending' for seller/business accounts
     const verificationStatus = (accountType && accountType !== 'user') ? 'pending' : 'approved';
+
     const userResult = await pool.query(
       `INSERT INTO users (email,phone,password,full_name,account_type,verifyToken,verification_status) values ($1,$2,$3,$4,$5,$6,$7) RETURNING user_id, verification_status`,
       [
@@ -54,7 +56,17 @@ const register = async (req, res) => {
       await pool.query(
         `INSERT INTO businesses (user_id, business_name, subscription_plan, subscription_period_end, is_paid)
          VALUES ($1, $2, $3, $4, $5)`,
-        [userId, fullName + " Business", 'free', oneYearFromNow, false]
+        [userId, businessName || fullName + " Business", 'free', oneYearFromNow, false]
+      );
+    }
+
+    // Create Seller Verification Record if not a regular user
+    if (accountType !== 'user') {
+      await pool.query(
+        `INSERT INTO seller_verifications 
+         (user_id, status, id_type, id_number, whatsapp_number, location_city)
+         VALUES ($1, 'pending', $2, $3, $4, $5)`,
+        [userId, idType || null, idNumber || null, whatsapp || null, locationCity || null]
       );
     }
 
