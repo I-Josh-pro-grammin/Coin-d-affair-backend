@@ -1,6 +1,4 @@
 import express from 'express';
-import { createCheckoutSession} from "../controllers/paymentController.js";
-import { handleStripeWebhook } from '../controllers/stripeWebhook.js';
 
 const router = express.Router();
 
@@ -52,6 +50,13 @@ const router = express.Router();
  *       200:
  *         description: Webhook received
  */
-router.post("/checkout-session", createCheckoutSession);
-router.post("/webhook", express.raw({ type: 'application/json' }), handleStripeWebhook);
+// Payments have been disabled — platform no longer processes payments.
+// Keep routes for backward compatibility but return informative 410 Gone responses.
+router.post('/checkout-session', (req, res) => {
+	res.status(410).json({ message: 'Payments are disabled. Buyers should contact sellers directly to arrange payment.' });
+});
+router.post('/webhook', (req, res) => {
+	// No webhook handling when payments are disabled
+	res.status(410).json({ message: 'Payment webhooks are disabled.' });
+});
 export default router;

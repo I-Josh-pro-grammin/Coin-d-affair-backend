@@ -23,7 +23,7 @@ const getAdminStats = async (req, res) => {
       pool.query(`SELECT COUNT(*)::int AS total_businesses FROM businesses`),
       pool.query(`SELECT COUNT(*)::int AS total_listings FROM listings`),
       pool.query(`SELECT COUNT(*)::int AS total_orders FROM orders`),
-      pool.query(`SELECT COALESCE(SUM(amount),0)::numeric AS total_revenue FROM payments WHERE status IN ('success','succeeded','completed')`),
+      pool.query(`SELECT COALESCE(SUM(total_amount),0)::numeric AS total_revenue FROM orders WHERE status = 'delivered'`),
       pool.query(`SELECT COUNT(*)::int AS today_signups FROM users WHERE DATE(created_at) = CURRENT_DATE`),
       pool.query(`SELECT COUNT(*)::int AS today_orders FROM orders WHERE DATE(created_at) = CURRENT_DATE`),
       pool.query(`
@@ -43,7 +43,7 @@ const getAdminStats = async (req, res) => {
         totalBusinesses: +businessesQ.rows[0].total_businesses,
         totalListings: +listingsQ.rows[0].total_listings,
         totalOrders: +ordersQ.rows[0].total_orders,
-        totalRevenue: revenueQ.rows[0].total_revenue,
+        totalRevenue: +revenueQ.rows?.[0]?.total_revenue || 0,
         todaySignups: +todayUsersQ.rows[0].today_signups,
         todayOrders: +todayOrdersQ.rows[0].today_orders,
         monthlySales: monthlySalesQ.rows,
@@ -216,6 +216,38 @@ const getUserDetails = async (req, res) => {
   } catch (err) {
     console.error("getUserDetails error:", err);
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// ------------------- Pending Sellers / Verification -------------------
+const getPendingSellers = async (req, res) => {
+  try {
+    const { page, limit, offset } = paginate(req.query, 20);
+    const result = await pool.query(
+      `SELECT user_id, email, full_name, phone, account_type, created_at FROM users WHERE verification_status = 'pending' ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    const countRes = await pool.query(`SELECT COUNT(*)::int as count FROM users WHERE verification_status = 'pending'`);
+    return res.status(200).json({ sellers: result.rows, pagination: { page, limit, total: countRes.rows[0].count } });
+  } catch (err) {
+    console.error('getPendingSellers error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const setSellerVerification = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { action } = req.body; // 'approve' | 'reject'
+    if (!['approve', 'reject'].includes(action)) return res.status(400).json({ message: 'Invalid action' });
+
+    const status = action === 'approve' ? 'approved' : 'rejected';
+    await pool.query(`UPDATE users SET verification_status = $1 WHERE user_id = $2`, [status, userId]);
+    if (req.adminLog) await req.adminLog('update_seller_verification', { resourceType: 'user', resourceId: userId, meta: { status } });
+    return res.status(200).json({ message: `Seller ${action}d` });
+  } catch (err) {
+    console.error('setSellerVerification error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -524,6 +556,8 @@ export {
   activateBusiness,
   getAllUsers,
   getUserDetails,
+  getPendingSellers,
+  setSellerVerification,
   banUser,
   unbanUser,
   deleteUser,

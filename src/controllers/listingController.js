@@ -106,7 +106,7 @@ const getListing = async (req, res) => {
 
     if (ids.length === 0) {
       return res.status(200).json({
-        listing: [],
+        listings: [],
         pagination: { page: currentPage, limit: normalizedLimit, count: 0 },
       });
     }
@@ -170,7 +170,7 @@ const getAllListings = async (req, res) => {
     const result = await pool.query(query, [normalizedLimit, offset]);
 
     res.status(200).json({
-      products: result.rows,
+      listings: result.rows,
       pagination: {
         page: currentPage,
         limit: normalizedLimit,

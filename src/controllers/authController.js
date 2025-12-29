@@ -9,8 +9,9 @@ const toSafeUser = (user) => ({
   name: user.full_name,
   email: user.email,
   phone: user.phone,
-  accountType: user.account_type,
+  account_type: user.account_type,
   isVerified: user.is_verified,
+  verificationStatus: user.verification_status || null,
   location: user.location
 });
 
@@ -29,15 +30,18 @@ const register = async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:8080";
     const verifyUrl = `${frontendUrl}/auth/verify/${emailVerifyToken}`;
     const hashedPassword = await hashPassword(password);
+    // New column `verification_status` will be set to 'pending' for seller/business accounts
+    const verificationStatus = (accountType && accountType !== 'user') ? 'pending' : 'approved';
     const userResult = await pool.query(
-      `INSERT INTO users (email,phone,password,full_name,account_type,verifyToken) values ($1,$2,$3,$4,$5,$6) RETURNING user_id`,
+      `INSERT INTO users (email,phone,password,full_name,account_type,verifyToken,verification_status) values ($1,$2,$3,$4,$5,$6,$7) RETURNING user_id, verification_status`,
       [
         email,
         phone,
         hashedPassword,
         fullName,
         accountType,
-        emailVerifyToken
+        emailVerifyToken,
+        verificationStatus
       ]
     );
 
@@ -209,7 +213,7 @@ const getCurrentUser = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT user_id, full_name, email, phone, account_type, is_verified FROM users WHERE user_id = $1`,
+      `SELECT user_id, full_name, email, phone, account_type, is_verified, verification_status FROM users WHERE user_id = $1`,
       [userId]
     );
 
