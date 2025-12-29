@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import pool from "../config/database.js";
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 export const handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
@@ -49,7 +49,7 @@ export const handleStripeWebhook = async (req, res) => {
       // save payment transfers for business
       await pool.query(
         `INSERT INTO payments(order_id,provider,provider_payment_id,amount,currency,status,recipient_type,recipient_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [orderId, "stripe", transfer.id, payoutAmount, "usd","succeeded","business",businessId]
+        [orderId, "stripe", transfer.id, payoutAmount, "usd", "succeeded", "business", businessId]
       );
 
       await pool.query(
@@ -59,5 +59,5 @@ export const handleStripeWebhook = async (req, res) => {
     }
   }
 
-  res.json({ received: true})
+  res.json({ received: true })
 };

@@ -1,11 +1,11 @@
 import Stripe from "stripe";
 import pool from "../config/database.js";
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 const createCheckoutSession = async (req, res) => {
   try {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('STRIPE_SECRET_KEY is not set in environment');
+    if (!stripe) {
+      console.error('Stripe not initialized (missing STRIPE_SECRET_KEY)');
       return res.status(500).json({ message: 'Stripe not configured on server' });
     }
     if (!process.env.FRONTEND_URL) {
@@ -40,8 +40,8 @@ const createCheckoutSession = async (req, res) => {
         (i) => i.listingId === listing.listings_id
       );
 
-      if(!cartItem) return;
-      
+      if (!cartItem) return;
+
       lineItems.push({
         price_data: {
           currency: listing.currency || "usd",
@@ -99,7 +99,7 @@ const createCheckoutSession = async (req, res) => {
         console.info('Returning simulated mobile-money checkout URL (simulation mode)');
         return res.json({ url: fakeUrl, simulated: true });
       } else {
-        const supported = ['card','acss_debit','alipay','ideal','klarna','oxxo','p24','pix','paynow','promptpay','mobilepay','wechat_pay','swish'];
+        const supported = ['card', 'acss_debit', 'alipay', 'ideal', 'klarna', 'oxxo', 'p24', 'pix', 'paynow', 'promptpay', 'mobilepay', 'wechat_pay', 'swish'];
         console.error(`Requested payment provider '${paymentProvider}' is not supported by Stripe or Stripe mobile-money not enabled.`);
         return res.status(400).json({
           message: `Requested mobile-money provider '${paymentProvider}' is not supported by Stripe in this configuration. Enable Stripe mobile-money by setting STRIPE_MOBILE_MONEY_ENABLED=true and a supported provider (mobilepay/pix/paynow/etc.), or enable simulation for testing.`

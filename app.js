@@ -143,5 +143,10 @@ app.use((error, req, res, next) => {
   });
 });
 
+// Add this to the very bottom of your app.js
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
 export default app;
