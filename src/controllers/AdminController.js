@@ -286,6 +286,7 @@ const updateListingStatus = async (req, res) => {
   try {
     const { listingId } = req.params;
     const { action } = req.body;
+    console.log("updateListingStatus called with:", { listingId, action });
     let statusSQL;
     switch ((action || "").toLowerCase()) {
       case "approve":
@@ -304,11 +305,17 @@ const updateListingStatus = async (req, res) => {
         return res.status(400).json({ message: "Invalid action" });
     }
     await pool.query(statusSQL, [listingId]);
-    if (req.adminLog) await req.adminLog("update_listing_status", { resourceType: "listing", resourceId: listingId, meta: { action } });
+
+    try {
+      if (req.adminLog) await req.adminLog("update_listing_status", { resourceType: "listing", resourceId: listingId, meta: { action } });
+    } catch (logErr) {
+      console.error("Admin log failed:", logErr);
+    }
+
     return res.status(200).json({ message: `Listing ${action}d` });
   } catch (err) {
     console.error("updateListingStatus error:", err);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: err.message || "Internal server error" });
   }
 };
 
