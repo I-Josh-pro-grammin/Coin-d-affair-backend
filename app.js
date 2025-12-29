@@ -146,6 +146,10 @@ app.use((error, req, res, next) => {
 });
 
 // Serve static files (SPA Support)
+import { runMigrations } from './src/utils/dbMigrate.js';
+import process from 'process';
+
+// Serve static files (SPA Support)
 app.get(/(.*)/, (req, res, next) => {
   if (req.path.startsWith('/api')) {
     return next(); // Let 404 handler deal with missing APIs
@@ -153,6 +157,20 @@ app.get(/(.*)/, (req, res, next) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// app.listen moved to server.js
+// Check if app.js is the entry point (Render runs 'node app.js')
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const PORT = process.env.PORT || 10000;
+  const startApp = async () => {
+    try {
+      await runMigrations();
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server started from app.js on port ${PORT}`);
+      });
+    } catch (error) {
+      console.error("Failed to start server from app.js:", error);
+    }
+  };
+  startApp();
+}
 
 export default app;
