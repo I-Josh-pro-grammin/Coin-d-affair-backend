@@ -9,9 +9,9 @@ const toSafeUser = (user) => ({
   name: user.full_name,
   email: user.email,
   phone: user.phone,
-  account_type: user.account_type,
+  accountType: user.account_type,
   isVerified: user.is_verified,
-  verificationStatus: user.verification_status || null,
+  verification_status: user.verification_status || null,
   location: user.location
 });
 
@@ -63,13 +63,12 @@ const register = async (req, res) => {
     // Create Seller Verification Record if not a regular user
     if (accountType !== 'user') {
       await pool.query(
-        `INSERT INTO seller_verifications 
+        `INSERT INTO seller_verifications
          (user_id, status, id_type, id_number, whatsapp_number, location_city)
          VALUES ($1, 'pending', $2, $3, $4, $5)`,
         [userId, idType || null, idNumber || null, whatsapp || null, locationCity || null]
       );
     }
-
 
     // Send verification email with proper error handling
     try {
@@ -98,57 +97,51 @@ const register = async (req, res) => {
                             <tr>
                               <td style="vertical-align:middle;">
                               </td>
-                              <td style="text-align:right; vertical-align:middle; font-size:13px; color:#6b7280;">
-                                <span style="display:inline-block; padding:6px 10px; border-radius:6px; background:#eef2ff; color:#3730a3;">Verify your email</span>
-                              </td>
                             </tr>
                           </table>
                         </td>
                       </tr>
-
-                      <!-- Hero -->
+                      <!-- Body Content -->
                       <tr>
-                        <td style="padding:22px 24px 8px 24px; text-align:left;">
-                          <h1 style="margin:0 0 8px 0; font-size:22px; line-height:1.2; color:#0f172a;">Hi ${fullName}, welcome to Coin d'affaire 👋</h1>
-                          <p style="margin:0; font-size:15px; color:#374151; line-height:1.5;">
-                            Thanks for creating an account. To finish setting up your profile and start buying or selling, please verify your email address.
+                        <td style="padding:0 24px 24px 24px;">
+                          <h1 style="margin:0 0 16px 0;font-size:24px;color:#1f2937;">Vérifiez votre email</h1>
+                          <p style="margin:0 0 16px 0;font-size:16px;line-height:1.5;color:#4b5563;">
+                            Nous avons envoyé un lien de vérification à <strong>${email}</strong>
+                          </p>
+                          <p style="margin:0 0 24px 0;font-size:16px;line-height:1.5;color:#4b5563;">
+                            Veuillez cliquer sur le lien ci-dessous pour activer votre compte et vous connecter.
+                          </p>
+                          <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                            <tr>
+                              <td align="center" style="background-color:#2563eb;border-radius:6px;">
+                                <a href="${verifyUrl}" style="display:inline-block;padding:12px 24px;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:6px;">
+                                  Vérifier mon email
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                          <p style="margin:24px 0 0 0;font-size:14px;color:#6b7280;">
+                            Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur:<br>
+                            <a href="${verifyUrl}" style="color:#2563eb;text-decoration:underline;word-break:break-all;">${verifyUrl}</a>
                           </p>
                         </td>
                       </tr>
-
-                      <!-- Button -->
+                      <!-- Footer -->
                       <tr>
-                        <td style="padding:18px 24px 8px 24px; text-align:center;">
-                          <a href="${verifyUrl}" target="_blank" style="display:inline-block; text-decoration:none; background:#2563eb; color:#ffffff; padding:14px 22px; border-radius:8px; font-weight:600; font-size:16px; box-shadow:0 6px 12px rgba(37,99,235,0.18);">
-                            Verify email address
-                          </a>
-                        </td>
-                      </tr           
-
-                      <!-- Footer small -->
-                      <tr>
-                        <td style="background:#fafafa; padding:14px 24px; text-align:center; font-size:12px; color:#9ca3af;">
-                          <div style="max-width:520px;margin:0 auto;">
-                            <p style="margin:0 0 6px 0;">Coin d'affaire — international marketplace for real estate, vehicles, fashion, electronics and more.</p>
-                            <p style="margin:0;">If you didn't create an account, you can safely ignore this email.</p>
-                          </div>
+                        <td style="background-color:#f9fafb;padding:16px 24px;font-size:12px;color:#9ca3af;text-align:center;">
+                          &copy; ${new Date().getFullYear()} Coin d'affaire. Tous droits réservés.
                         </td>
                       </tr>
-
                     </table>
-                    <!-- end inner card -->
                   </td>
                 </tr>
               </table>
             </body>
-          </html>
-          `,
+          </html>`
       });
       console.log(`✅ Verification email sent to ${email}`);
     } catch (emailError) {
       console.error('❌ Failed to send verification email:', emailError.message);
-      // Still return success since user was created, but log the error
-      // In production, you might want to queue this for retry
     }
 
     res.status(201).json({ message: "Check your email to verify account" });

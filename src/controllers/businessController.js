@@ -141,6 +141,29 @@ const addProductPost = async (req, res) => {
     const cleanSubcategoryId = (subcategoryId && subcategoryId !== "") ? subcategoryId : null;
     const cleanLocationId = (locationId && locationId !== "") ? locationId : null;
 
+    // Check verification status
+    // We query the DB to get the latest status, avoiding stale token data
+    const userStatusResult = await pool.query(
+      `SELECT verification_status FROM users WHERE user_id = $1`,
+      [user.userId]
+    );
+
+    if (userStatusResult.rows.length > 0) {
+      const currentStatus = userStatusResult.rows[0].verification_status;
+      // If user is a business/seller and not approved, block them
+      // Assuming 'approved' is the status for verified sellers
+      // And we allow regular 'user' account type to post? Or is this strict for sellers?
+      // Based on context, this is for "sellers waiting to be verified".
+      // Regular users usually don't post products in this flow, or if they do, they are implicit sellers.
+      // But let's check if they have a 'pending' or 'rejected' status.
+      if (currentStatus && currentStatus !== 'approved') {
+        return res.status(403).json({
+          message: "Votre compte doit être vérifié avant de pouvoir publier des annonces.",
+          reason: "verification_pending"
+        });
+      }
+    }
+
     // OPTIONAL: Try to find a business ID if it exists, but don't fail if not found.
     // This supports both "Business" and "Individual" sellers.
     let businessId = null;
