@@ -150,9 +150,10 @@ import { runMigrations } from './src/utils/dbMigrate.js';
 import process from 'process';
 
 // Serve static files (SPA Support)
+// Serve static files (SPA Support)
 app.get(/(.*)/, (req, res, next) => {
   if (req.path.startsWith('/api')) {
-    return next(); // Let 404 handler deal with missing APIs
+    return next();
   }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
