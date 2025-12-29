@@ -9,7 +9,7 @@ const toSafeUser = (user) => ({
   name: user.full_name,
   email: user.email,
   phone: user.phone,
-  accountType: user.account_type,
+  account_type: user.account_type,
   isVerified: user.is_verified,
   verification_status: user.verification_status || null,
   location: user.location
