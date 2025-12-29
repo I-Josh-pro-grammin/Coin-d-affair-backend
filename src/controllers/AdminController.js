@@ -344,9 +344,11 @@ const getAllOrders = async (req, res) => {
       LEFT JOIN users u ON o.user_id = u.user_id
       LEFT JOIN users s ON o.seller_id = s.user_id
       ${where}
+      ${req.query.q ? `AND (o.order_id::text LIKE $${params.length + 1} OR LOWER(u.full_name) LIKE $${params.length + 1} OR LOWER(u.email) LIKE $${params.length + 1})` : ''}
       ORDER BY o.created_at DESC
-      LIMIT $${params.length - 1} OFFSET $${params.length}
+      LIMIT $${params.length - (req.query.q ? 0 : 1)} OFFSET $${params.length + (req.query.q ? 1 : 0)}
     `;
+    if (req.query.q) params.push(`%${req.query.q.toLowerCase()}%`);
     const result = await pool.query(q, params);
     const countRes = await pool.query(`SELECT COUNT(*)::int as count FROM orders ${status ? "WHERE status = $1" : ""}`, status ? [status] : []);
     return res.status(200).json({ orders: result.rows, pagination: { page, limit, total: countRes.rows[0].count } });
@@ -443,6 +445,9 @@ const listAdminLogs = async (req, res) => {
 const createNotification = async (req, res) => {
   try {
     const { title, body, target_user_id, data } = req.body;
+    if (!title || !body) {
+      return res.status(400).json({ message: "Title and body are required" });
+    }
     await pool.query(`INSERT INTO admin_notifications (title, body, target_user_id, data) VALUES ($1,$2,$3,$4)`, [title, body || "", target_user_id || null, data ? JSON.stringify(data) : {}]);
     return res.status(201).json({ message: "Notification created" });
   } catch (err) {
