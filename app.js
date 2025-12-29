@@ -12,6 +12,7 @@ import categoryRoutes from './src/route/categoryRoutes.js'
 import businessRoutes from './src/route/businessRoutes.js'
 import adminRoutes from './src/route/adminRoutes.js'
 import userRoutes from './src/route/userRoutes.js'
+import verificationRoutes from './src/route/verificationRoutes.js'
 import favoritesRoutes from './src/route/favoritesRoutes.js'
 import swaggerUi from 'swagger-ui-express'
 import swaggerSpec from './src/swagger.js'
@@ -115,6 +116,7 @@ app.use("/api", orderRoutes)
 app.use("/api", businessRoutes)
 app.use('/api', cartRoutes)
 app.use('/api', categoryRoutes)
+app.use('/api', verificationRoutes)
 // Mount admin routes under /api/admin so admin-only middleware doesn't run for all /api routes
 app.use('/api/admin', adminRoutes)
 app.use('/api', favoritesRoutes)
