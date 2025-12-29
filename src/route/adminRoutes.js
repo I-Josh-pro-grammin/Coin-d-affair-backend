@@ -390,6 +390,10 @@ router.get("/user/:userId", adminLogger("get_user"), Admin.getUserDetails);
 router.post("/user/:userId/ban", adminLogger("ban_user"), Admin.banUser);
 router.post("/user/:userId/unban", adminLogger("unban_user"), Admin.unbanUser);
 
+// Pending sellers / verification
+router.get('/sellers/pending', adminLogger('list_pending_sellers'), Admin.getPendingSellers);
+router.post('/seller/:userId/verification', adminLogger('update_seller_verification'), Admin.setSellerVerification);
+
 // listings
 router.get("/listings", adminLogger("list_listings"), Admin.getAllListings);
 router.post("/listing/:listingId/status", adminLogger("update_listing_status"), Admin.updateListingStatus);

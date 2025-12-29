@@ -21,7 +21,10 @@ const addFavorite = async (req, res) => {
       [userId, listing_id]
     );
 
-    res.status(201).json({ favorite_id: insert.rows });
+    res.status(201).json({
+      message: 'Added to favorites',
+      favorite: insert.rows[0]
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });

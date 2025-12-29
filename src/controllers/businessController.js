@@ -105,10 +105,10 @@ const getBusinessProductsPost = async (req, res) => {
     const allProducts = await pool.query(query, [user.userId]);
 
     if (!allProducts.rows.length) {
-      return res.status(200).json({ message: "You have no product on market" });
+      return res.status(200).json([]);
     }
 
-    res.status(200).json({ allProducts });
+    res.status(200).json(allProducts.rows);
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
@@ -117,6 +117,18 @@ const getBusinessProductsPost = async (req, res) => {
 const addProductPost = async (req, res) => {
   const user = req.user;
   try {
+    // Block product creation if seller is not verified/approved
+    try {
+      const vsRes = await pool.query(`SELECT verification_status FROM users WHERE user_id = $1 LIMIT 1`, [user.userId]);
+      const verificationStatus = vsRes.rows[0]?.verification_status;
+      if (verificationStatus && verificationStatus !== 'approved') {
+        return res.status(403).json({ message: "Your account is awaiting admin verification. You cannot publish products yet." });
+      }
+    } catch (e) {
+      console.error('Error checking verification status', e);
+      // If check fails, fail-safe: prevent publishing until admin verifies
+      return res.status(500).json({ message: "Unable to verify account status. Try again later." });
+    }
     let {
       categoryId,
       subcategoryId,
@@ -506,10 +518,11 @@ const getBusinessTransactions = async (req, res) => {
     }
 
     const businessId = businessSearch.rows[0].business_id;
-    const query = `SELECT payment_id,order_id,provider,provider_payment_id,amount,currency,status,created_at FROM payments where recipient_type= 'business' AND recipient_id= $1 ORDER BY created_at DESC`;
-    const result = await pool.query(query, businessId);
-    res.status(200).json({
-      transactions: result.rows,
+    // Payments are no longer processed by the platform. Return an empty list
+    // and an explanatory message so clients can adapt to offline payments.
+    return res.status(200).json({
+      transactions: [],
+      message: 'Payments are disabled. Buyers should contact sellers directly to arrange payment.'
     });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
