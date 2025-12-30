@@ -18,6 +18,7 @@ const getAdminStats = async (req, res) => {
       todayUsersQ,
       todayOrdersQ,
       monthlySalesQ,
+      monthlySignupsQ,
     ] = await Promise.all([
       pool.query(`SELECT COUNT(*)::int AS total_users FROM users`),
       pool.query(`SELECT COUNT(*)::int AS total_businesses FROM businesses`),
@@ -35,6 +36,15 @@ const getAdminStats = async (req, res) => {
         ) m
         ORDER BY month
       `),
+      pool.query(`
+        SELECT to_char(month, 'YYYY-MM') AS month, count::int AS new_users
+        FROM (
+          SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*) AS count
+          FROM users
+          GROUP BY month
+        ) m
+        ORDER BY month
+      `),
     ]);
 
     return res.status(200).json({
@@ -47,6 +57,7 @@ const getAdminStats = async (req, res) => {
         todaySignups: +todayUsersQ.rows[0].today_signups,
         todayOrders: +todayOrdersQ.rows[0].today_orders,
         monthlySales: monthlySalesQ.rows,
+        monthlySignups: monthlySignupsQ.rows,
       },
     });
   } catch (err) {
@@ -64,9 +75,9 @@ const getAllBusinesses = async (req, res) => {
     const params = [];
     let where = "WHERE 1=1";
     if (q) {
-      params.push(`%${q.toLowerCase()}%`);
-      params.push(`%${q.toLowerCase()}%`);
-      where += ` AND (LOWER(b.business_name) LIKE $${params.length - 1} OR LOWER(u.email) LIKE $${params.length})`;
+      params.push(`% ${q.toLowerCase()} % `);
+      params.push(`% ${q.toLowerCase()} % `);
+      where += ` AND(LOWER(b.business_name) LIKE $${params.length - 1} OR LOWER(u.email) LIKE $${params.length})`;
     }
 
     params.push(limit, offset);
@@ -79,17 +90,17 @@ const getAllBusinesses = async (req, res) => {
       ${where}
       ORDER BY b.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
-    `;
+        `;
     const result = await pool.query(query, params);
 
     // count for pagination
     let countRes;
     if (!q) {
-      countRes = await pool.query(`SELECT COUNT(*)::int as count FROM businesses`);
+      countRes = await pool.query(`SELECT COUNT(*):: int as count FROM businesses`);
     } else {
       // simple count with same where
-      const countParams = [`%${q.toLowerCase()}%`, `%${q.toLowerCase()}%`];
-      countRes = await pool.query(`SELECT COUNT(*)::int as count FROM businesses b JOIN users u ON b.user_id = u.user_id WHERE LOWER(b.business_name) LIKE $1 OR LOWER(u.email) LIKE $2`, countParams);
+      const countParams = [`% ${q.toLowerCase()} % `, ` % ${q.toLowerCase()} % `];
+      countRes = await pool.query(`SELECT COUNT(*):: int as count FROM businesses b JOIN users u ON b.user_id = u.user_id WHERE LOWER(b.business_name) LIKE $1 OR LOWER(u.email) LIKE $2`, countParams);
     }
 
     return res.status(200).json({
@@ -126,7 +137,7 @@ const deleteBusiness = async (req, res) => {
     const businessId = bq.rows[0].business_id;
 
     // safe delete: remove media, listings, related data
-    await pool.query(`DELETE FROM listing_media WHERE listing_id IN (SELECT listings_id FROM listings WHERE business_id = $1)`, [businessId]);
+    await pool.query(`DELETE FROM listing_media WHERE listing_id IN(SELECT listings_id FROM listings WHERE business_id = $1)`, [businessId]);
     await pool.query(`DELETE FROM listings WHERE business_id = $1`, [businessId]);
     // delete payments where recipient is business (optional)
     await pool.query(`DELETE FROM payments WHERE recipient_type = 'business' AND recipient_id = $1`, [businessId]);
@@ -175,9 +186,9 @@ const getAllUsers = async (req, res) => {
     const params = [];
     let where = "WHERE 1=1";
     if (q) {
-      params.push(`%${q.toLowerCase()}%`);
-      params.push(`%${q.toLowerCase()}%`);
-      where += ` AND (LOWER(email) LIKE $${params.length - 1} OR LOWER(full_name) LIKE $${params.length})`;
+      params.push(`% ${q.toLowerCase()} % `);
+      params.push(`% ${q.toLowerCase()} % `);
+      where += ` AND(LOWER(email) LIKE $${params.length - 1} OR LOWER(full_name) LIKE $${params.length})`;
     }
     params.push(limit, offset);
     const users = await pool.query(`
@@ -186,12 +197,12 @@ const getAllUsers = async (req, res) => {
       ${where}
       ORDER BY created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
-    `, params);
+        `, params);
 
     // count
     let countRes;
-    if (!q) countRes = await pool.query(`SELECT COUNT(*)::int as count FROM users`);
-    else countRes = await pool.query(`SELECT COUNT(*)::int as count FROM users WHERE LOWER(email) LIKE $1 OR LOWER(full_name) LIKE $2`, [`%${q.toLowerCase()}%`, `%${q.toLowerCase()}%`]);
+    if (!q) countRes = await pool.query(`SELECT COUNT(*):: int as count FROM users`);
+    else countRes = await pool.query(`SELECT COUNT(*):: int as count FROM users WHERE LOWER(email) LIKE $1 OR LOWER(full_name) LIKE $2`, [` % ${q.toLowerCase()} % `, ` % ${q.toLowerCase()} % `]);
 
     return res.status(200).json({ users: users.rows, pagination: { page, limit, total: countRes.rows[0].count } });
   } catch (err) {
@@ -208,8 +219,8 @@ const getUserDetails = async (req, res) => {
 
     // fetch orders and listings summary
     const [orders, listings] = await Promise.all([
-      pool.query(`SELECT COUNT(*)::int as total_orders, COALESCE(SUM(total_amount)::numeric,0) as total_spent FROM orders WHERE user_id = $1`, [userId]),
-      pool.query(`SELECT COUNT(*)::int as total_listings FROM listings WHERE seller_id = $1`, [userId]),
+      pool.query(`SELECT COUNT(*):: int as total_orders, COALESCE(SUM(total_amount):: numeric, 0) as total_spent FROM orders WHERE user_id = $1`, [userId]),
+      pool.query(`SELECT COUNT(*):: int as total_listings FROM listings WHERE seller_id = $1`, [userId]),
     ]);
 
     return res.status(200).json({ user: user.rows[0], stats: { orders: orders.rows[0], listings: listings.rows[0] } });
@@ -227,7 +238,7 @@ const getPendingSellers = async (req, res) => {
       `SELECT user_id, email, full_name, phone, account_type, created_at FROM users WHERE verification_status = 'pending' ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
-    const countRes = await pool.query(`SELECT COUNT(*)::int as count FROM users WHERE verification_status = 'pending'`);
+    const countRes = await pool.query(`SELECT COUNT(*):: int as count FROM users WHERE verification_status = 'pending'`);
     return res.status(200).json({ sellers: result.rows, pagination: { page, limit, total: countRes.rows[0].count } });
   } catch (err) {
     console.error('getPendingSellers error:', err);
@@ -288,7 +299,7 @@ const deleteUser = async (req, res) => {
     const userBusinesses = await pool.query(`SELECT business_id FROM businesses WHERE user_id = $1`, [userId]);
     for (const business of userBusinesses.rows) {
       // This logic duplicates deleteBusiness roughly
-      await pool.query(`DELETE FROM listing_media WHERE listing_id IN (SELECT listings_id FROM listings WHERE business_id = $1)`, [business.business_id]);
+      await pool.query(`DELETE FROM listing_media WHERE listing_id IN(SELECT listings_id FROM listings WHERE business_id = $1)`, [business.business_id]);
       await pool.query(`DELETE FROM listings WHERE business_id = $1`, [business.business_id]);
       await pool.query(`DELETE FROM businesses WHERE business_id = $1`, [business.business_id]);
     }
@@ -312,14 +323,14 @@ const getAllListings = async (req, res) => {
     const params = [];
     let where = "WHERE 1=1";
     if (q) {
-      params.push(`%${q.toLowerCase()}%`);
-      where += ` AND (LOWER(l.title) LIKE $${params.length} OR LOWER(l.description) LIKE $${params.length})`;
+      params.push(`% ${q.toLowerCase()} % `);
+      where += ` AND(LOWER(l.title) LIKE $${params.length} OR LOWER(l.description) LIKE $${params.length})`;
     }
     // add pagination params
     params.push(limit, offset);
     const query = `
       SELECT l.*, b.business_name, u.email AS seller_email,
-        COALESCE(json_agg(jsonb_build_object('id', lm.listing_media_id,'type',lm.media_type,'url',lm.url) ORDER BY lm.sort_order) FILTER (WHERE lm.listing_media_id IS NOT NULL), '[]') as media
+        COALESCE(json_agg(jsonb_build_object('id', lm.listing_media_id, 'type', lm.media_type, 'url', lm.url) ORDER BY lm.sort_order) FILTER(WHERE lm.listing_media_id IS NOT NULL), '[]') as media
       FROM listings l
       LEFT JOIN businesses b ON l.business_id = b.business_id
       LEFT JOIN users u ON l.seller_id = u.user_id
@@ -328,13 +339,13 @@ const getAllListings = async (req, res) => {
       GROUP BY l.listings_id, b.business_name, u.email
       ORDER BY l.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
-    `;
+        `;
     const result = await pool.query(query, params);
 
     // count
     let countRes;
-    if (!q) countRes = await pool.query(`SELECT COUNT(*)::int as count FROM listings`);
-    else countRes = await pool.query(`SELECT COUNT(*)::int as count FROM listings WHERE LOWER(title) LIKE $1 OR LOWER(description) LIKE $1`, [`%${q.toLowerCase()}%`]);
+    if (!q) countRes = await pool.query(`SELECT COUNT(*):: int as count FROM listings`);
+    else countRes = await pool.query(`SELECT COUNT(*):: int as count FROM listings WHERE LOWER(title) LIKE $1 OR LOWER(description) LIKE $1`, [` % ${q.toLowerCase()} % `]);
 
     return res.status(200).json({ listings: result.rows, pagination: { page, limit, total: countRes.rows[0].count } });
   } catch (err) {
@@ -415,10 +426,10 @@ const getAllOrders = async (req, res) => {
       ${req.query.q ? `AND (o.order_id::text LIKE $${params.length + 1} OR LOWER(u.full_name) LIKE $${params.length + 1} OR LOWER(u.email) LIKE $${params.length + 1})` : ''}
       ORDER BY o.created_at DESC
       LIMIT $${params.length - (req.query.q ? 0 : 1)} OFFSET $${params.length + (req.query.q ? 1 : 0)}
-    `;
-    if (req.query.q) params.push(`%${req.query.q.toLowerCase()}%`);
+        `;
+    if (req.query.q) params.push(`% ${req.query.q.toLowerCase()} % `);
     const result = await pool.query(q, params);
-    const countRes = await pool.query(`SELECT COUNT(*)::int as count FROM orders ${status ? "WHERE status = $1" : ""}`, status ? [status] : []);
+    const countRes = await pool.query(`SELECT COUNT(*):: int as count FROM orders ${status ? "WHERE status = $1" : ""}`, status ? [status] : []);
     return res.status(200).json({ orders: result.rows, pagination: { page, limit, total: countRes.rows[0].count } });
   } catch (err) {
     console.error("getAllOrders error:", err);
@@ -436,7 +447,7 @@ const getOrderDetails = async (req, res) => {
       LEFT JOIN users s ON o.seller_id = s.user_id
       WHERE o.order_id = $1
       LIMIT 1
-    `;
+        `;
     const order = await pool.query(q, [orderId]);
     if (order.rowCount === 0) return res.status(404).json({ message: "Order not found" });
 
@@ -446,7 +457,7 @@ const getOrderDetails = async (req, res) => {
       LEFT JOIN listings l ON oi.listing_id = l.listings_id
       LEFT JOIN listing_media lm ON lm.listing_id = l.listings_id AND lm.media_type = 'image'
       WHERE oi.order_id = $1
-    `, [orderId]);
+        `, [orderId]);
 
     return res.status(200).json({ order: order.rows[0], items: items.rows });
   } catch (err) {
@@ -475,9 +486,9 @@ const updateOrderStatus = async (req, res) => {
 const getSubscriptionStats = async (req, res) => {
   try {
     const [plans, activeCount, expiredCount] = await Promise.all([
-      pool.query(`SELECT subscription_plan, COUNT(*)::int as count FROM businesses GROUP BY subscription_plan`),
-      pool.query(`SELECT COUNT(*)::int as active_subscriptions FROM businesses WHERE subscription_period_end > NOW()`),
-      pool.query(`SELECT COUNT(*)::int as expired_subscriptions FROM businesses WHERE subscription_period_end <= NOW()`),
+      pool.query(`SELECT subscription_plan, COUNT(*):: int as count FROM businesses GROUP BY subscription_plan`),
+      pool.query(`SELECT COUNT(*):: int as active_subscriptions FROM businesses WHERE subscription_period_end > NOW()`),
+      pool.query(`SELECT COUNT(*):: int as expired_subscriptions FROM businesses WHERE subscription_period_end <= NOW()`),
     ]);
     return res.status(200).json({ plans: plans.rows, active: activeCount.rows[0].active_subscriptions, expired: expiredCount.rows[0].expired_subscriptions });
   } catch (err) {
@@ -516,7 +527,7 @@ const createNotification = async (req, res) => {
     if (!title || !body) {
       return res.status(400).json({ message: "Title and body are required" });
     }
-    await pool.query(`INSERT INTO admin_notifications (title, body, target_user_id, data) VALUES ($1,$2,$3,$4)`, [title, body || "", target_user_id || null, data ? JSON.stringify(data) : {}]);
+    await pool.query(`INSERT INTO admin_notifications(title, body, target_user_id, data) VALUES($1, $2, $3, $4)`, [title, body || "", target_user_id || null, data ? JSON.stringify(data) : {}]);
     return res.status(201).json({ message: "Notification created" });
   } catch (err) {
     console.error("createNotification error:", err);
