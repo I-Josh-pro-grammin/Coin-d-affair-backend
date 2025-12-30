@@ -23,18 +23,41 @@ import upload from './src/config/multer.js'
 import multer from 'multer'
 
 const app = express()
-const allowedOrigin = [
-  process.env.FRONTEND_URL,
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:4173",
+  "http://localhost:5173",
+  "http://localhost:8080",
   "https://akaguriroo.com",
   "https://www.akaguriroo.com",
-  "http://localhost:8080",
-  "http://localhost:5173"
-].filter(Boolean); // Filter out undefined/null values
+  "https://akaguriroo-backend.onrender.com"
+];
+
+// Add FRONTEND_URL from env if it exists and isn't already in the list
+if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
 
 app.use(cors({
-  origin: allowedOrigin,
-  credentials: true
-}))
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('Blocked by CORS:', origin);
+      // For now, in production with varied subdomains or issues, you might want to be lenient or strict.
+      // Strict: callback(new Error('Not allowed by CORS'))
+      // Debug/Lenient (if you suspect issues):
+      // callback(null, true); // UNCOMMENT TO TEMPORARILY DISABLE CORS BLOCKS FOR DEBUGGING
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+}));
 
 app.use(express.json())
 app.use(bodyParser.json())
