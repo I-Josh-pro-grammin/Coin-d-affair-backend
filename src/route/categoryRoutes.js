@@ -1,6 +1,6 @@
 import express from "express";
 import protectedRoutes from "../middlewares/authMiddleware.js";
-import { createCategory, createSubCategory, getCategory, getSubCategory, getAllCategories, getSubcategoriesByCategorySlug } from "../controllers/categoryController.js";
+import { createCategory, createSubCategory, getCategory, getSubCategory, getAllCategories, getSubcategoriesByCategorySlug, removeCategory } from "../controllers/categoryController.js";
 
 const router = express.Router();
 /**
@@ -57,6 +57,20 @@ const router = express.Router();
  *       201:
  *         description: Subcategory created
  *
+ * /api/category/delete-category/{category_id}:
+ *   delete:
+ *     summary: Delete a category (admin only)
+ *     tags: [Category]
+ *     parameters:
+ *       - in: path
+ *         name: category_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Category deleted
+ *
  * /api/category/slug/{categorySlug}/subcategories:
  *   get:
  *     summary: Get all subcategories for a category by slug
@@ -76,5 +90,6 @@ router.post('/category/create-category', protectedRoutes('admin'), createCategor
 router.get('/category/get-category', protectedRoutes(["admin", "business"]), getCategory)
 router.post('/category/create-subcategory', protectedRoutes('admin'), createSubCategory)
 router.get('/category/get-subcategory', protectedRoutes(["admin", "business"]), getSubCategory)
-router.get('/category/slug/:categorySlug/subcategories',protectedRoutes(['admin','business']), getSubcategoriesByCategorySlug)
+router.delete('/category/delete-category/:category_id', protectedRoutes('admin'), removeCategory)
+router.get('/category/slug/:categorySlug/subcategories', protectedRoutes(['admin', 'business']), getSubcategoriesByCategorySlug)
 export default router;
