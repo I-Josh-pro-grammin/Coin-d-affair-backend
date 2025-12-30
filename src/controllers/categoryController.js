@@ -99,11 +99,14 @@ const removeCategory = async (req, res) => {
         SELECT category_name, slug FROM categories WHERE category_id = $1
   `, [category_id])
 
-    if (category.lenth == 0) {
-      res.status(404).json({
+    if (category.rowCount === 0) {
+      return res.status(404).json({
         error: "Category does not exist"
       })
     }
+
+    // Optional: Delete subcategories first (if cascade not set)
+    await pool.query('DELETE FROM subcategories WHERE category_id = $1', [category_id]);
 
     await pool.query(`
         DELETE FROM categories WHERE category_id = $1
