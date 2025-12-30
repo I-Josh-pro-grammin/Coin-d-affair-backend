@@ -218,7 +218,7 @@ const getCurrentUser = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT user_id, full_name, email, phone, account_type, is_verified, verification_status FROM users WHERE user_id = $1`,
+      `SELECT user_id, full_name, seller_whatsapp, seller_contact_email, email, phone, account_type, is_verified, verification_status FROM users WHERE user_id = $1`,
       [userId]
     );
 
@@ -226,7 +226,7 @@ const getCurrentUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ user: toSafeUser(result.rows[0]) });
+    res.status(200).json({ user: result.rows[0] });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
@@ -236,15 +236,21 @@ const getCurrentUser = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const { fullName, phone } = req.body;
+    const { fullName, phone, sellerWhatsapp, sellerContactEmail } = req.body;
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     const result = await pool.query(
-      `UPDATE users SET full_name = COALESCE($1, full_name), phone = COALESCE($2, phone) WHERE user_id = $3 RETURNING *`,
-      [fullName, phone, userId]
+      `UPDATE users 
+       SET full_name = COALESCE($1, full_name), 
+           phone = COALESCE($2, phone),
+           seller_whatsapp = COALESCE($3, seller_whatsapp),
+           seller_contact_email = COALESCE($4, seller_contact_email),
+           updated_at = NOW()
+       WHERE user_id = $5 RETURNING *`,
+      [fullName, phone, sellerWhatsapp || null, sellerContactEmail || null, userId]
     );
 
     if (!result.rows.length) {

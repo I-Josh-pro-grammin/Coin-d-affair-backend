@@ -106,7 +106,7 @@ const getBusinessProfile = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.userId;
     const q = await pool.query(
-      `SELECT business_id, business_name, subscription_plan, is_paid, created_at FROM businesses WHERE user_id = $1 LIMIT 1`,
+      `SELECT business_id, business_name, subscription_plan, contact_phone, contact_email, is_paid, created_at FROM businesses WHERE user_id = $1 LIMIT 1`,
       [userId]
     );
     if (q.rowCount === 0) return res.status(404).json({ message: "Business not found" });
@@ -373,7 +373,7 @@ const updateListingStatus = async (req, res) => {
       console.error("Admin log failed:", logErr);
     }
 
-    return res.status(200).json({ message: `Listing ${action}d` });
+    return res.status(200).json({ message: `Listing ${action}d successfully` });
   } catch (err) {
     console.error("updateListingStatus error:", err);
     return res.status(500).json({ message: err.message || "Internal server error" });
@@ -387,7 +387,7 @@ const deleteListing = async (req, res) => {
     await pool.query(`DELETE FROM listing_media WHERE listing_id = $1`, [listingId]);
     await pool.query(`DELETE FROM listings WHERE listings_id = $1`, [listingId]);
     if (req.adminLog) await req.adminLog("delete_listing", { resourceType: "listing", resourceId: listingId });
-    return res.status(200).json({ message: "Listing deleted" });
+    return res.status(200).json({ message: "Listing deleted successfully" });
   } catch (err) {
     console.error("deleteListing error:", err);
     return res.status(500).json({ message: "Internal server error" });
