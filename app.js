@@ -26,9 +26,10 @@ const app = express()
 const allowedOrigin = [
   process.env.FRONTEND_URL,
   "https://akaguriroo.com",
-  "http://localhost:8080"
-]
-
+  "https://www.akaguriroo.com",
+  "http://localhost:8080",
+  "http://localhost:5173"
+].filter(Boolean); // Filter out undefined/null values
 
 app.use(cors({
   origin: allowedOrigin,
