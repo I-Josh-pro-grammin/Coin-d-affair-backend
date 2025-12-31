@@ -242,12 +242,19 @@ const addProductPost = async (req, res) => {
     );
 
     res.json({
-      messsage: "Product added successfully",
+      message: "Product added successfully",
       product: productWithMedia.rows[0],
     });
   } catch (error) {
     console.error("❌ addProductPost error:", error);
-    return res.status(500).json({ message: "Internal server error", details: error.message });
+    // Ensure we always return a response and don't hang
+    if (!res.headersSent) {
+      return res.status(500).json({
+        message: "Internal server error",
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
   }
 };
 
@@ -507,7 +514,7 @@ const getBusinessTransactions = async (req, res) => {
 
     const businessId = businessSearch.rows[0].business_id;
     const query = `SELECT payment_id,order_id,provider,provider_payment_id,amount,currency,status,created_at FROM payments where recipient_type= 'business' AND recipient_id= $1 ORDER BY created_at DESC`;
-    const result = await pool.query(query, businessId);
+    const result = await pool.query(query, [businessId]);
     res.status(200).json({
       transactions: result.rows,
     });
