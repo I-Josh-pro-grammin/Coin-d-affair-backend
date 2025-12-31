@@ -84,6 +84,17 @@ export const runMigrations = async () => {
             $$;
         `);
 
+        // 5. Favorites Table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS favorites (
+                favorite_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                listing_id UUID NOT NULL REFERENCES listings(listings_id) ON DELETE CASCADE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, listing_id)
+            );
+        `);
+
         // Update null is_approved (fallback)
         await client.query(`UPDATE listings SET is_approved = TRUE WHERE is_approved IS NULL`);
 
