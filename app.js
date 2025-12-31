@@ -23,6 +23,18 @@ import upload from './src/config/multer.js'
 import multer from 'multer'
 
 const app = express()
+
+// Global Crash Handlers
+process.on('uncaughtException', (err) => {
+  console.error('CRITICAL: Uncaught Exception:', err);
+  // Keep the process alive for a moment to flush logs if possible, but usually best to exit.
+  // We'll log it and let it crash, hoping Render captures stderr.
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:4173",
