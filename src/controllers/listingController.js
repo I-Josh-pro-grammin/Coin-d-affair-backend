@@ -121,7 +121,7 @@ const getListing = async (req, res) => {
     const finalQuery = `
         ${baseListingSelect}
         WHERE l.listings_id = ANY($1)
-        GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
+        GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name, b.whatsapp, b.website, b.contact_email, u.phone, u.email
         ORDER BY l.created_at DESC
   `;
 
@@ -146,7 +146,7 @@ const getListingById = async (req, res) => {
     const query = `
       ${baseListingSelect}
       WHERE l.listings_id = $1
-      GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
+      GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name, b.whatsapp, b.website, b.contact_email, u.phone, u.email
       LIMIT 1
   `;
     const result = await pool.query(query, [listingId]);
@@ -170,7 +170,7 @@ const getAllListings = async (req, res) => {
 
     const query = `
       ${baseListingSelect}
-      GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
+      GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name, b.whatsapp, b.website, b.contact_email, u.phone, u.email
       ORDER BY l.created_at DESC
       LIMIT $1 OFFSET $2
   `;
