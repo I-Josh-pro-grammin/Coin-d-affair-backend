@@ -3,6 +3,11 @@ import pkg from 'multer-storage-cloudinary';
 const CloudinaryStorage = pkg.CloudinaryStorage || pkg;
 import multer from "multer";
 
+console.log("DEBUG: uploadMedia.js loaded");
+console.log("DEBUG: Cloudinary object keys:", cloudinary ? Object.keys(cloudinary) : "undefined");
+console.log("DEBUG: Cloudinary uploader present:", cloudinary && cloudinary.uploader ? "YES" : "NO");
+console.log("DEBUG: CloudinaryStorage type:", typeof CloudinaryStorage);
+
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {

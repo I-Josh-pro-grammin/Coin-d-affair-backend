@@ -35,6 +35,9 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
+// Trust proxy is required for Render (and other proxies) to correctly handle IP addresses and rate limiting
+app.set('trust proxy', 1);
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:4173",
