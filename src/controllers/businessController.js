@@ -1,5 +1,5 @@
 import pool from "../config/database.js";
-import { validateVideoLength } from "../utils/cloudinaryHelper.js";
+
 
 
 const createBusiness = async (req, res) => {
@@ -156,7 +156,6 @@ const addProductPost = async (req, res) => {
     // handle file uploads
     const files = req.files || [];
     const images = files.filter((f) => f.mimetype.startsWith("image/"));
-    const videos = files.filter((f) => f.mimetype.startsWith("video/"));
 
     if (images.length === 0) {
       return res.status(400).json({ message: "Atleast one image is required" });
@@ -166,10 +165,6 @@ const addProductPost = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Maximum of 4 images is allowed" });
-    }
-
-    if (videos.length > 1) {
-      return res.status(400).json({ message: "Only one video is allowed" });
     }
 
     const insertQuery = `
@@ -205,20 +200,6 @@ const addProductPost = async (req, res) => {
           images[i].path,
           i,
           JSON.stringify({ public_id: images[i].filename }),
-        ]
-      );
-    }
-
-    if (videos.length === 1) {
-      await validateVideoLength(videos[0].filename, 60);
-      await pool.query(
-        `INSERT INTO listing_media (listing_id,media_type,url,sort_order,metadata) VALUES ($1,$2,$3,$4,$5)`,
-        [
-          listingId,
-          "video",
-          videos[0].path,
-          images.length,
-          JSON.stringify({ public_id: videos[0].filename }),
         ]
       );
     }
@@ -301,7 +282,6 @@ const updateProductPost = async (req, res) => {
 
     const files = req.files || [];
     const images = files.filter((f) => f.mimetype.startsWith("image/"));
-    const videos = files.filter((f) => f.mimetype.startsWith("video/"));
 
     if (files.length > 0) {
       if (images.length === 0) {
@@ -314,12 +294,6 @@ const updateProductPost = async (req, res) => {
         return res
           .status(400)
           .json({ message: "Maximum of 4 images have reached" });
-      }
-
-      if (videos.length > 1) {
-        return res
-          .status(400)
-          .json({ message: "Maximum of one video have reached" });
       }
     }
 
@@ -368,16 +342,6 @@ const updateProductPost = async (req, res) => {
           images[i].path,
           i,
           JSON.stringify({ public_id: images[i].filename })
-        ]);
-      }
-
-      if (videos.length === 1) {
-        await pool.query(updateMediaQuery, [
-          productId,
-          "video",
-          videos[0].path,
-          images.length,
-          JSON.stringify({ public_id: videos[0].filename })
         ]);
       }
     }

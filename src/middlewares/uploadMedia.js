@@ -5,27 +5,23 @@ import multer from "multer";
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => {
-    console.log(`[Upload] Starting upload for ${file.fieldname} (mimetype: ${file.mimetype})`);
-    return {
-      folder: "products",
-      format: "png",
-      public_id: file.fieldname + '-' + Date.now(),
-    };
+  params: {
+    folder: "products",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"], // Explicitly allow only these formats
+    public_id: (req, file) => file.fieldname + '-' + Date.now(),
   },
 });
 
 export const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit for images
+    fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed"), false);
+      return cb(null, true);
     }
+    cb(new Error("Only image files are allowed"), false);
   },
 });
 
