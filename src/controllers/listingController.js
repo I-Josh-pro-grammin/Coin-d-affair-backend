@@ -136,7 +136,7 @@ const getListing = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ messsage: "Internal server error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 

@@ -360,7 +360,7 @@ const router = express.Router();
 
 
 router.post("/business/create-business", protectedRoutes("user"), createBusiness);
-router.patch("/business/update-profile", protectedRoutes("business"), updateBusiness);
+router.patch("/business/update-profile", protectedRoutes(["business", "user"]), updateBusiness);
 // Allow both 'business' and 'user' (individual sellers) to access product routes
 router.post("/business/add-product", protectedRoutes(["business", "user"]), upload.array("images", 5), checkSubscription, addProductPost);
 router.post("/business/update-product/:productId", protectedRoutes(["business", "user"]), upload.array("images", 5), updateProductPost);
