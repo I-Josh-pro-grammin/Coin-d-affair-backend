@@ -54,9 +54,9 @@ const register = async (req, res) => {
       oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
 
       await pool.query(
-        `INSERT INTO businesses (user_id, business_name, subscription_plan, subscription_period_end, is_paid)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [userId, businessName || fullName + " Business", 'free', oneYearFromNow, false]
+        `INSERT INTO businesses (user_id, business_name, subscription_plan, subscription_period_end, is_paid, whatsapp)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [userId, businessName || fullName + " Business", 'free', oneYearFromNow, false, whatsapp || null]
       );
     }
 

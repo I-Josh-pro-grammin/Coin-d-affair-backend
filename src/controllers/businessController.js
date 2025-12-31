@@ -56,6 +56,22 @@ const updateBusiness = async (req, res) => {
     values.push(req.body.is_paid);
   }
 
+  // New fields
+  if (req.body.whatsapp) {
+    updates.push(`whatsapp = $${index++}`);
+    values.push(req.body.whatsapp);
+  }
+
+  if (req.body.website) {
+    updates.push(`website = $${index++}`);
+    values.push(req.body.website);
+  }
+
+  if (req.body.contact_email) {
+    updates.push(`contact_email = $${index++}`);
+    values.push(req.body.contact_email);
+  }
+
   if (updates.length === 0) {
     return res.status(400).json({ message: "No fields provided to update" });
   }

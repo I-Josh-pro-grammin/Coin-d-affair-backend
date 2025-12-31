@@ -1,32 +1,39 @@
 import pool from "../config/database.js";
 
+
 const baseListingSelect = `
-    SELECT 
-        l.*,
-        loc.name as location,
-        c.category_name,
-        c.slug as category_slug,
-        sc.subcategory_name,
-        sc.slug as subcategory_slug,
-        b.business_name,
-        COALESCE(
-          json_agg(
-            jsonb_build_object(
-              'media_id', lm.listing_media_id,
-              'type', lm.media_type,
-              'url', lm.url,
-              'order', lm.sort_order
-            ) ORDER BY lm.sort_order
-          ) FILTER (WHERE lm.listing_media_id IS NOT NULL),
-          '[]'
-        ) AS media
+SELECT
+l.*,
+  loc.name as location,
+  c.category_name,
+  c.slug as category_slug,
+  sc.subcategory_name,
+  sc.slug as subcategory_slug,
+  b.business_name,
+  b.whatsapp as business_whatsapp,
+  b.website as business_website,
+  b.contact_email as business_email,
+  u.phone as seller_phone,
+  u.email as seller_email,
+  COALESCE(
+    json_agg(
+      jsonb_build_object(
+        'media_id', lm.listing_media_id,
+        'type', lm.media_type,
+        'url', lm.url,
+        'order', lm.sort_order
+      ) ORDER BY lm.sort_order
+    ) FILTER(WHERE lm.listing_media_id IS NOT NULL),
+    '[]'
+  ) AS media
     FROM listings l 
     LEFT JOIN locations loc ON l.location_id = loc.location_id 
     LEFT JOIN categories c ON l.category_id = c.category_id
     LEFT JOIN subcategories sc ON l.subcategory_id = sc.subcategory_id
     LEFT JOIN businesses b ON l.business_id = b.business_id
+    LEFT JOIN users u ON l.seller_id = u.user_id
     LEFT JOIN listing_media lm ON lm.listing_id = l.listings_id
-`;
+  `;
 
 const getListing = async (req, res) => {
   const {
@@ -51,38 +58,38 @@ const getListing = async (req, res) => {
         SELECT l.listings_id
         FROM listings l
         LEFT JOIN locations loc ON l.location_id = loc.location_id
-        WHERE 1=1
-        `;
+        WHERE 1 = 1
+  `;
 
     if (categoryId) {
-      idQuery += ` AND l.category_id = $${idx++}`;
+      idQuery += ` AND l.category_id = $${idx++} `;
       params.push(categoryId);
     }
 
     if (subcategoryId) {
-      idQuery += ` AND l.subcategory_id = $${idx++}`;
+      idQuery += ` AND l.subcategory_id = $${idx++} `;
       params.push(subcategoryId);
     }
 
     if (listingId) {
-      idQuery += ` AND l.listings_id = $${idx++}`;
+      idQuery += ` AND l.listings_id = $${idx++} `;
       params.push(listingId);
     }
 
     if (search) {
-      idQuery += ` AND (LOWER(l.title) LIKE $${idx} OR LOWER(l.description) LIKE $${idx + 1})`;
-      const likeSearch = `%${search.toLowerCase()}%`;
+      idQuery += ` AND(LOWER(l.title) LIKE $${idx} OR LOWER(l.description) LIKE $${idx + 1})`;
+      const likeSearch = `% ${search.toLowerCase()}% `;
       params.push(likeSearch, likeSearch);
       idx += 2;
     }
 
     if (minPrice) {
-      idQuery += ` AND l.price >= $${idx++}`;
+      idQuery += ` AND l.price >= $${idx++} `;
       params.push(minPrice);
     }
 
     if (maxPrice) {
-      idQuery += ` AND l.price <= $${idx++}`;
+      idQuery += ` AND l.price <= $${idx++} `;
       params.push(maxPrice);
     }
 
@@ -98,7 +105,7 @@ const getListing = async (req, res) => {
     const currentPage = Number(page) || 1;
     const offset = (currentPage - 1) * normalizedLimit;
 
-    idQuery += ` LIMIT $${idx++} OFFSET $${idx++}`;
+    idQuery += ` LIMIT $${idx++} OFFSET $${idx++} `;
     params.push(normalizedLimit, offset);
 
     const idResults = await pool.query(idQuery, params);
@@ -116,7 +123,7 @@ const getListing = async (req, res) => {
         WHERE l.listings_id = ANY($1)
         GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
         ORDER BY l.created_at DESC
-        `;
+  `;
 
     const listings = await pool.query(finalQuery, [ids]);
     res.status(200).json({
@@ -141,7 +148,7 @@ const getListingById = async (req, res) => {
       WHERE l.listings_id = $1
       GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
       LIMIT 1
-    `;
+  `;
     const result = await pool.query(query, [listingId]);
 
     if (!result.rows.length) {
@@ -166,7 +173,7 @@ const getAllListings = async (req, res) => {
       GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name
       ORDER BY l.created_at DESC
       LIMIT $1 OFFSET $2
-    `;
+  `;
     const result = await pool.query(query, [normalizedLimit, offset]);
 
     res.status(200).json({
