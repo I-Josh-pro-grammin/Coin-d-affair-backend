@@ -31,66 +31,47 @@ const createBusiness = async (req, res) => {
 };
 
 const updateBusiness = async (req, res) => {
-  const userId = req.body.user_id || req.user.userId;
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
+  const { user_id } = req.body;
   const updates = [];
   const values = [];
   let index = 1;
 
-  const allowedFields = [
-    'business_name',
-    'vat_number',
-    'subscription_plan',
-    'is_paid',
-    'contact_phone',
-    'contact_email'
-  ];
-
-  allowedFields.forEach(field => {
-    if (typeof req.body[field] !== "undefined") {
-      updates.push(`${field} = $${index++}`);
-      values.push(req.body[field]);
-    }
-  });
-
-  // New fields
-  if (req.body.whatsapp) {
-    updates.push(`whatsapp = $${index++}`);
-    values.push(req.body.whatsapp);
+  if (req.body.business_name) {
+    updates.push(`business_name = $${index++}`);
+    values.push(req.body.business_name);
   }
 
-  if (req.body.website) {
-    updates.push(`website = $${index++}`);
-    values.push(req.body.website);
+  if (req.body.vat_number) {
+    updates.push(`vat_number = $${index++}`);
+    values.push(req.body.vat_number);
   }
 
-  if (req.body.contact_email) {
-    updates.push(`contact_email = $${index++}`);
-    values.push(req.body.contact_email);
+  if (req.body.subscription_plan) {
+    updates.push(`subscription_plan = $${index++}`);
+    values.push(req.body.subscription_plan);
+  }
+
+  if (typeof req.body.is_paid !== "undefined") {
+    updates.push(`is_paid = $${index++}`);
+    values.push(req.body.is_paid);
   }
 
   if (updates.length === 0) {
     return res.status(400).json({ message: "No fields provided to update" });
   }
 
-  values.push(userId);
+  values.push(user_id);
 
   const sql = `
     UPDATE businesses
-    SET ${updates.join(", ")}, updated_at = NOW()
+    SET ${updates.join(", ")}
     WHERE user_id = $${index}
     RETURNING *;
   `;
 
   try {
-    const result = await pool.query(sql, values);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Business not found" });
-    }
-    res.status(200).json({ message: "Business updated successfully", business: result.rows[0] });
+    await pool.query(sql, values);
+    res.status(200).json({ message: "Business updated successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to update business" });
@@ -127,7 +108,7 @@ const getBusinessProductsPost = async (req, res) => {
       return res.status(200).json({ message: "You have no product on market" });
     }
 
-    res.status(200).json({ listings: allProducts.rows });
+    res.status(200).json({ allProducts });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
@@ -178,15 +159,13 @@ const addProductPost = async (req, res) => {
     const videos = files.filter((f) => f.mimetype.startsWith("video/"));
 
     if (images.length === 0) {
-      console.log("❌ addProductPost: No images found in request");
-      return res.status(400).json({ message: "At least one image is required" });
+      return res.status(400).json({ message: "Atleast one image is required" });
     }
 
-    if (images.length > 5) {
-      console.log("❌ addProductPost: Too many images", images.length);
+    if (images.length > 4) {
       return res
         .status(400)
-        .json({ message: "Maximum of 5 images is allowed" });
+        .json({ message: "Maximum of 4 images is allowed" });
     }
 
     if (videos.length > 1) {
@@ -244,8 +223,6 @@ const addProductPost = async (req, res) => {
       );
     }
 
-    console.log("✅ Product created with ID:", listingId);
-
     const productWithMedia = await pool.query(
       `
       SELECT l.*,
@@ -265,7 +242,7 @@ const addProductPost = async (req, res) => {
     );
 
     res.json({
-      message: "Product added successfully",
+      messsage: "Product added successfully",
       product: productWithMedia.rows[0],
     });
   } catch (error) {
@@ -289,7 +266,6 @@ const updateProductPost = async (req, res) => {
       isNegotiable,
       canDeliver,
       stock,
-      locationId,
       attributes,
     } = req.body;
 
@@ -334,10 +310,10 @@ const updateProductPost = async (req, res) => {
           .json({ message: "Atleast one image is required" });
       }
 
-      if (images.length > 5) {
+      if (images.length > 4) {
         return res
           .status(400)
-          .json({ message: "Maximum of 5 images have reached" });
+          .json({ message: "Maximum of 4 images have reached" });
       }
 
       if (videos.length > 1) {
@@ -358,11 +334,10 @@ const updateProductPost = async (req, res) => {
         condition = COALESCE($7, condition),
         is_negotiable = COALESCE($8, is_negotiable),
         can_deliver = COALESCE($9, can_deliver),
-         stock = COALESCE($10, stock),
-         location_id = COALESCE($11, location_id),
-         attributes = COALESCE($12, attributes),
-         updated_at = NOW()
-       WHERE listings_id = $13`,
+        stock = COALESCE($10, stock),
+        attributes = COALESCE($11, attributes),
+        updated_at = NOW()
+      WHERE listings_id = $12`,
       [
         categoryId || null,
         subcategoryId || null,
@@ -374,7 +349,6 @@ const updateProductPost = async (req, res) => {
         typeof isNegotiable === "undefined" ? null : isNegotiable,
         typeof canDeliver === "undefined" ? null : canDeliver,
         typeof stock === "undefined" ? null : stock,
-        locationId || null,
         attributes ? JSON.stringify(attributes) : null,
         productId,
       ]
@@ -479,21 +453,6 @@ const deleteProductPost = async (req, res) => {
   }
 };
 
-const getBusinessProfile = async (req, res) => {
-  try {
-    const business = await pool.query(
-      'SELECT b.*, u.full_name, u.email, u.phone, u.seller_whatsapp, u.seller_contact_email from businesses b join users u on b.user_id = u.user_id where b.user_id=$1',
-      [req.user.userId]
-    );
-    if (business.rows.length === 0) {
-      return res.status(400).json({ message: "Business not found" });
-    }
-    res.status(200).json({ business: business.rows[0] });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
-  }
-}
-
 const getBusinessOrders = async (req, res) => {
   try {
     const user = req.user;
@@ -572,7 +531,6 @@ export {
   updateBusiness,
   getBusinessProductsPost,
   getBusinessOrders,
-  getBusinessProfile,
   addProductPost,
   updateProductPost,
   deleteProductPost,
