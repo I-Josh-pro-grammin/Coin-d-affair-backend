@@ -20,6 +20,11 @@ const tryListen = (port) => {
 
 const startServer = async () => {
     try {
+        console.log("Cloudinary Config Check:");
+        console.log(`- CLOUDINARY_CLOUD_NAME: ${process.env.CLOUDINARY_CLOUD_NAME ? 'Present' : 'MISSING'}`);
+        console.log(`- CLOUDINARY_API_KEY: ${process.env.CLOUDINARY_API_KEY ? 'Present' : 'MISSING'}`);
+        console.log(`- CLOUDINARY_API_SECRET: ${process.env.CLOUDINARY_API_SECRET ? 'Present' : 'MISSING'}`);
+
         // Run DB Migrations
         await runMigrations();
         const initialPort = parseInt(process.env.PORT || 10000);

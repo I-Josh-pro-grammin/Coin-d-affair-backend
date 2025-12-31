@@ -188,6 +188,11 @@ app.get(/(.*)/, (req, res, next) => {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const startServer = async (port) => {
     try {
+      console.log("Cloudinary Config Check (app.js):");
+      console.log(`- CLOUDINARY_CLOUD_NAME: ${process.env.CLOUDINARY_CLOUD_NAME ? 'Present' : 'MISSING'}`);
+      console.log(`- CLOUDINARY_API_KEY: ${process.env.CLOUDINARY_API_KEY ? 'Present' : 'MISSING'}`);
+      console.log(`- CLOUDINARY_API_SECRET: ${process.env.CLOUDINARY_API_SECRET ? 'Present' : 'MISSING'}`);
+
       await runMigrations();
       const server = app.listen(port, '0.0.0.0', () => {
         console.log(`Server started from app.js on port ${port}`);
@@ -209,5 +214,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const PORT = parseInt(process.env.PORT || 10000);
   startServer(PORT);
 }
+
+console.log("ENV LOADED?", {
+  cloud: process.env.CLOUDINARY_CLOUD_NAME,
+  key: process.env.CLOUDINARY_API_KEY,
+  secret: process.env.CLOUDINARY_API_SECRET ? "present" : "missing"
+});
+
 
 export default app;

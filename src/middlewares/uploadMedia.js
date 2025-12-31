@@ -6,6 +6,7 @@ import multer from "multer";
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
+    console.log(`[Upload] Starting upload for ${file.fieldname} (mimetype: ${file.mimetype})`);
     return {
       folder: "products",
       format: "png",
@@ -17,7 +18,7 @@ const storage = new CloudinaryStorage({
 export const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 10 * 1024 * 1024, // 10MB limit for images
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {

@@ -1,5 +1,5 @@
 import pool from "../config/database.js";
-import { validateVideoLength } from "../utils/cloudinaryHelper.js";
+
 
 
 const createBusiness = async (req, res) => {
@@ -116,6 +116,7 @@ const getBusinessProductsPost = async (req, res) => {
 
 const addProductPost = async (req, res) => {
   const user = req.user;
+  console.log(`[BusinessController] addProductPost hit for user ${user.userId}`);
   try {
     let {
       categoryId,
@@ -168,10 +169,6 @@ const addProductPost = async (req, res) => {
         .json({ message: "Maximum of 4 images is allowed" });
     }
 
-    if (videos.length > 1) {
-      return res.status(400).json({ message: "Only one video is allowed" });
-    }
-
     const insertQuery = `
       INSERT INTO listings
         (seller_id, business_id, category_id, subcategory_id, title, description, price, currency, condition, is_negotiable, can_deliver, stock, attributes, location_id)
@@ -205,20 +202,6 @@ const addProductPost = async (req, res) => {
           images[i].path,
           i,
           JSON.stringify({ public_id: images[i].filename }),
-        ]
-      );
-    }
-
-    if (videos.length === 1) {
-      await validateVideoLength(videos[0].filename, 60);
-      await pool.query(
-        `INSERT INTO listing_media (listing_id,media_type,url,sort_order,metadata) VALUES ($1,$2,$3,$4,$5)`,
-        [
-          listingId,
-          "video",
-          videos[0].path,
-          images.length,
-          JSON.stringify({ public_id: videos[0].filename }),
         ]
       );
     }
