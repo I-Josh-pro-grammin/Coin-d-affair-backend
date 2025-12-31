@@ -65,6 +65,25 @@ export const runMigrations = async () => {
             $$;
         `);
 
+        // 4. Businesses Table: whatsapp, website, contact_email
+        await client.query(`
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'whatsapp') THEN
+                    ALTER TABLE businesses ADD COLUMN whatsapp TEXT;
+                END IF;
+                
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'website') THEN
+                    ALTER TABLE businesses ADD COLUMN website TEXT;
+                END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'contact_email') THEN
+                    ALTER TABLE businesses ADD COLUMN contact_email TEXT;
+                END IF;
+            END
+            $$;
+        `);
+
         // Update null is_approved (fallback)
         await client.query(`UPDATE listings SET is_approved = TRUE WHERE is_approved IS NULL`);
 
