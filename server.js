@@ -3,18 +3,27 @@ import path from 'path'
 import { runMigrations } from './src/utils/dbMigrate.js';
 
 
-const PORT = process.env.PORT || 10000;
+const tryListen = (port) => {
+    const server = app.listen(port, '0.0.0.0', () => {
+        console.log(`Server running on port ${port}`);
+    });
+
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`Port ${port} is in use, trying ${port + 1}...`);
+            tryListen(port + 1);
+        } else {
+            console.error('Server failed to start:', err);
+        }
+    });
+};
 
 const startServer = async () => {
     try {
         // Run DB Migrations
         await runMigrations();
-
-        app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Server running on port ${PORT}`);
-        }).on('error', (err) => {
-            console.error('Server failed to start:', err);
-        });
+        const initialPort = parseInt(process.env.PORT || 10000);
+        tryListen(initialPort);
     } catch (error) {
         console.error('Startup error:', error);
     }

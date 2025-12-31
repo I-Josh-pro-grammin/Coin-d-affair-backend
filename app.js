@@ -186,18 +186,28 @@ app.get(/(.*)/, (req, res, next) => {
 
 // Check if app.js is the entry point (Render runs 'node app.js')
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const PORT = process.env.PORT || 10000;
-  const startApp = async () => {
+  const startServer = async (port) => {
     try {
       await runMigrations();
-      app.listen(PORT, '0.0.0.0', () => {
-        console.log(`Server started from app.js on port ${PORT}`);
+      const server = app.listen(port, '0.0.0.0', () => {
+        console.log(`Server started from app.js on port ${port}`);
+      });
+
+      server.on('error', (e) => {
+        if (e.code === 'EADDRINUSE') {
+          console.log(`Port ${port} is in use, trying ${port + 1}...`);
+          startServer(port + 1);
+        } else {
+          console.error("Server error:", e);
+        }
       });
     } catch (error) {
       console.error("Failed to start server from app.js:", error);
     }
   };
-  startApp();
+
+  const PORT = parseInt(process.env.PORT || 10000);
+  startServer(PORT);
 }
 
 export default app;
