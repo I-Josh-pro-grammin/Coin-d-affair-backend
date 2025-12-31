@@ -287,31 +287,56 @@ const unbanUser = async (req, res) => {
 };
 
 const deleteUser = async (req, res) => {
+  const client = await pool.connect();
   try {
     const { userId } = req.params;
 
-    // Check if user exists
-    const user = await pool.query(`SELECT user_id FROM users WHERE user_id = $1`, [userId]);
-    if (user.rowCount === 0) return res.status(404).json({ message: "User not found" });
+    await client.query('BEGIN');
 
-    // Delete related data first (Manual Cascade or rely on DB - safer to do manual if constraints aren't cascade)
-    // Deleting businesses owned by user
-    const userBusinesses = await pool.query(`SELECT business_id FROM businesses WHERE user_id = $1`, [userId]);
-    for (const business of userBusinesses.rows) {
-      // This logic duplicates deleteBusiness roughly
-      await pool.query(`DELETE FROM listing_media WHERE listing_id IN(SELECT listings_id FROM listings WHERE business_id = $1)`, [business.business_id]);
-      await pool.query(`DELETE FROM listings WHERE business_id = $1`, [business.business_id]);
-      await pool.query(`DELETE FROM businesses WHERE business_id = $1`, [business.business_id]);
+    // Check if user exists
+    const user = await client.query(`SELECT user_id FROM users WHERE user_id = $1`, [userId]);
+    if (user.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // Delete user
-    await pool.query(`DELETE FROM users WHERE user_id = $1`, [userId]);
+    // 1. Detach or Delete Dependencies that restrict deletion
+    // Admin Notifications: Delete them
+    await client.query(`DELETE FROM admin_notifications WHERE target_user_id = $1`, [userId]);
+
+    // Admin Logs: Set to NULL to preserve history
+    await client.query(`UPDATE admin_logs SET admin_user_id = NULL WHERE admin_user_id = $1`, [userId]);
+
+    // Payments: Set user_id to NULL to preserve financial records (orphaned payments)
+    await client.query(`UPDATE payments SET user_id = NULL WHERE user_id = $1`, [userId]);
+
+    // 2. Delete Business Data (Manual cleanup to be safe, though CASCADE might handle some)
+    const userBusinesses = await client.query(`SELECT business_id FROM businesses WHERE user_id = $1`, [userId]);
+    for (const business of userBusinesses.rows) {
+      // Delete media
+      await client.query(`DELETE FROM listing_media WHERE listing_id IN(SELECT listings_id FROM listings WHERE business_id = $1)`, [business.business_id]);
+      // Delete listings
+      await client.query(`DELETE FROM listings WHERE business_id = $1`, [business.business_id]);
+      // Delete business (This cascades to variants, updates, etc if configured, but let's be explicit where valid)
+      await client.query(`DELETE FROM businesses WHERE business_id = $1`, [business.business_id]);
+    }
+
+    // 3. Delete the User
+    // This will CASCADE to: addresses, carts, businesses (if any left)
+    // This will SET NULL on: orders (buyer/seller), listings (seller_id ON DELETE CASCADE in schema? Let's check schema.)
+    // Schema says: listings seller_id FK -> users ON DELETE CASCADE. So listings by this user (not business) are deleted.
+    await client.query(`DELETE FROM users WHERE user_id = $1`, [userId]);
+
+    await client.query('COMMIT');
 
     if (req.adminLog) await req.adminLog("delete_user", { resourceType: "user", resourceId: userId });
     return res.status(200).json({ message: "User deleted successfully" });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error("deleteUser error:", err);
     return res.status(500).json({ message: "Internal server error" });
+  } finally {
+    client.release();
   }
 };
 
