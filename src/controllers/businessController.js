@@ -31,7 +31,11 @@ const createBusiness = async (req, res) => {
 };
 
 const updateBusiness = async (req, res) => {
-  const { user_id } = req.body;
+  const userId = req.user?.userId;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
   const updates = [];
   const values = [];
   let index = 1;
@@ -56,11 +60,21 @@ const updateBusiness = async (req, res) => {
     values.push(req.body.is_paid);
   }
 
+  if (req.body.website) {
+    updates.push(`website = $${index++}`);
+    values.push(req.body.website);
+  }
+
+  if (req.body.contact_email) {
+    updates.push(`contact_email = $${index++}`);
+    values.push(req.body.contact_email);
+  }
+
   if (updates.length === 0) {
     return res.status(400).json({ message: "No fields provided to update" });
   }
 
-  values.push(user_id);
+  values.push(userId);
 
   const sql = `
     UPDATE businesses
@@ -70,10 +84,13 @@ const updateBusiness = async (req, res) => {
   `;
 
   try {
-    await pool.query(sql, values);
-    res.status(200).json({ message: "Business updated successfully" });
+    const result = await pool.query(sql, values);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Business not found" });
+    }
+    res.status(200).json({ message: "Business updated successfully", business: result.rows[0] });
   } catch (error) {
-    console.error(error);
+    console.error("updateBusiness error:", error);
     res.status(500).json({ message: "Failed to update business" });
   }
 };

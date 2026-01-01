@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, loginController, verifyEmail, getCurrentUser, updateProfile } from '../controllers/authController.js';
+import { register, loginController, verifyEmail, getCurrentUser, updateProfile, updatePassword } from '../controllers/authController.js';
 import { loginLimiter } from '../middlewares/rateLimiting.js';
 import protectedRoutes from '../middlewares/authMiddleware.js';
 
@@ -157,5 +157,6 @@ router.post('/auth/login', loginLimiter, loginController);
 router.get('/auth/verify/:verifyToken', verifyEmail);
 router.get('/auth/me', protectedRoutes(), getCurrentUser);
 router.put('/auth/profile', protectedRoutes(), updateProfile);
+router.post('/auth/update-password', protectedRoutes(), updatePassword);
 
 export default router;

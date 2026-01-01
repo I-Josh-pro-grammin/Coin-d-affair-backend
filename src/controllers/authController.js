@@ -264,10 +264,44 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const updatePassword = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new passwords are required" });
+    }
+
+    const userResult = await pool.query(`SELECT password FROM users WHERE user_id = $1`, [userId]);
+    if (userResult.rowCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isPasswordCorrect = await comparePassword(currentPassword, userResult.rows[0].password);
+    if (!isPasswordCorrect) {
+      return res.status(400).json({ message: "Incorrect current password" });
+    }
+
+    const hashedNewPassword = await hashPassword(newPassword);
+    await pool.query(`UPDATE users SET password = $1, updated_at = NOW() WHERE user_id = $2`, [hashedNewPassword, userId]);
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("updatePassword error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export {
   register,
   verifyEmail,
   loginController,
   getCurrentUser,
   updateProfile,
+  updatePassword,
 }
