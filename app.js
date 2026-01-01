@@ -55,17 +55,13 @@ if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_UR
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.lovable.app')) {
+    const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.lovable.app') || isLocalhost) {
       callback(null, true);
     } else {
       console.log('Blocked by CORS:', origin);
-      // For now, in production with varied subdomains or issues, you might want to be lenient or strict.
-      // Strict: callback(new Error('Not allowed by CORS'))
-      // Debug/Lenient (if you suspect issues):
-      // callback(null, true); // UNCOMMENT TO TEMPORARILY DISABLE CORS BLOCKS FOR DEBUGGING
       callback(new Error('Not allowed by CORS'));
     }
   },
