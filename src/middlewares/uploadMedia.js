@@ -8,7 +8,6 @@ const storage = new CloudinaryStorage({
     folder: "products",
     // Enforce image only
     resource_type: 'image',
-    allowed_formats: ["jpg", "jpeg", "png", "webp", "gif"],
     public_id: (req, file) => file.fieldname + '-' + Date.now(),
   },
 });
