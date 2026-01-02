@@ -13,6 +13,7 @@ import adminRoutes from './src/route/adminRoutes.js'
 import userRoutes from './src/route/userRoutes.js'
 import verificationRoutes from './src/route/verificationRoutes.js'
 import favoritesRoutes from './src/route/favoritesRoutes.js'
+import debugRoutes from './debug_routes.js'
 import swaggerUi from 'swagger-ui-express'
 import swaggerSpec from './src/swagger.js'
 import pool from './src/config/database.js'
@@ -72,7 +73,6 @@ app.use(cors({
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
-
 
 
 const __filename = fileURLToPath(import.meta.url)
@@ -155,6 +155,7 @@ app.use('/api', verificationRoutes)
 // Mount admin routes under /api/admin so admin-only middleware doesn't run for all /api routes
 app.use('/api/admin', adminRoutes)
 app.use('/api', favoritesRoutes)
+app.use('/api', debugRoutes)
 app.use('/users', userRoutes)
 
 // Global error handling middleware (MUST be after all routes)
