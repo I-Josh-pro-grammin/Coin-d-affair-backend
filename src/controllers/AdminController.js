@@ -117,7 +117,7 @@ const getBusinessProfile = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.userId;
     const q = await pool.query(
-      `SELECT business_id, business_name, subscription_plan, contact_phone, contact_email, is_paid, created_at FROM businesses WHERE user_id = $1 LIMIT 1`,
+      `SELECT business_id, business_name, subscription_plan, contact_phone, contact_email, website, is_paid, created_at FROM businesses WHERE user_id = $1 LIMIT 1`,
       [userId]
     );
     if (q.rowCount === 0) return res.status(404).json({ message: "Business not found" });
