@@ -1,4 +1,4 @@
-import cloudinary from "../config/cloudinary.js";
+import { cloudinary } from "../config/cloudinary.js";
 import pkg from 'multer-storage-cloudinary';
 import multer from "multer";
 

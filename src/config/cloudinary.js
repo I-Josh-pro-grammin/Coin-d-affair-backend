@@ -8,4 +8,6 @@ v2.config({
   timeout: 60000 // 60 seconds timeout
 });
 
-export default v2;
+const cloudinary = v2;
+export { cloudinary };
+export default cloudinary;
