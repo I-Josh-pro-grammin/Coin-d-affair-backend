@@ -1,4 +1,4 @@
-import { cloudinary } from "../config/cloudinary.js";
+import cloudinary from "../config/cloudinary.js";
 import pkg from 'multer-storage-cloudinary';
 import multer from "multer";
 
@@ -19,6 +19,11 @@ if (typeof pkg === 'function') {
 }
 
 console.log("DEBUG: Final CloudinaryStorage constructor type:", typeof CloudinaryStorage);
+
+if (!cloudinary || typeof cloudinary.uploader === 'undefined') {
+  console.error("CRITICAL ERROR: Cloudinary object is malformed:", cloudinary);
+  throw new Error("Cloudinary object missing uploader");
+}
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
