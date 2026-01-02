@@ -28,7 +28,8 @@ if (!cloudinary || typeof cloudinary.uploader === 'undefined') {
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "products",
+    folder: "Akaguriro_products",
+    resource_type: "auto",
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
     public_id: (req, file) => file.fieldname + '-' + Date.now(),
     cloudinary: cloudinary, // Redundant passing for safety
