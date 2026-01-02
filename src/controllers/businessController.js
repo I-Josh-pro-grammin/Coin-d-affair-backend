@@ -460,22 +460,25 @@ const deleteProductPost = async (req, res) => {
       [productId]
     );
 
-    if (checkProduct.rowCount == 0) {
-      return res.status(200).json({ message: "Product deleted successfully" });
+    if (checkProduct.rowCount > 0) {
+      const hasActiveOrders = checkProduct.rows.some(
+        (order) =>
+          order.orderStatus !== "delivered" && order.orderStatus !== "cancelled"
+      );
+
+      if (hasActiveOrders) {
+        return res
+          .status(400)
+          .json({ message: "Cannot delete product. It is in active orders" });
+      }
     }
 
-    const hasActiveOrders = checkProduct.rows.some(
-      (order) =>
-        order.orderStatus !== "delivered" && order.orderStatus !== "cancelled"
-    );
+    // Delete associated media first to avoid foreign key constraints
+    await pool.query(`DELETE FROM listing_media WHERE listing_id = $1`, [productId]);
 
-    if (hasActiveOrders) {
-      return res
-        .status(400)
-        .json({ message: "Cannot delete product. It is in orders" });
-    }
+    // Now delete the listing
+    await pool.query(`DELETE FROM listings WHERE listings_id = $1`, [productId]);
 
-    await pool.query(`DELETE FROM listings where listings_id=$1`, [productId]);
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
