@@ -369,8 +369,8 @@ const updateProductPost = async (req, res) => {
         updated_at = NOW()
       WHERE listings_id = $12`,
       [
-        categoryId ? parseInt(categoryId) : null,
-        subcategoryId ? parseInt(subcategoryId) : null,
+        categoryId || null,
+        subcategoryId || null,
         title || null,
         description || null,
         (price && price !== "") ? parseFloat(price) : null,
@@ -461,19 +461,17 @@ const deleteProductPost = async (req, res) => {
       [productId]
     );
 
-    if (checkProduct.rowCount == 0) {
-      return res.status(200).json({ message: "Product deleted successfully" });
-    }
-
-    const hasActiveOrders = checkProduct.rows.some(
-      (order) =>
-        order.orderStatus !== "delivered" && order.orderStatus !== "cancelled"
-    );
-
-    if (hasActiveOrders) {
-      return res
-        .status(400)
-        .json({ message: "Cannot delete product. It is in orders" });
+    // If no orders, proceed to delete
+    if (checkProduct.rowCount > 0) {
+      const hasActiveOrders = checkProduct.rows.some(
+        (order) =>
+          order.orderStatus !== "delivered" && order.orderStatus !== "cancelled"
+      );
+      if (hasActiveOrders) {
+        return res
+          .status(400)
+          .json({ message: "Cannot delete product. It is in active orders" });
+      }
     }
 
     await pool.query(`DELETE FROM listings where listings_id=$1`, [productId]);
