@@ -1,11 +1,24 @@
 import cloudinary from "../config/cloudinary.js";
 import pkg from 'multer-storage-cloudinary';
-const { CloudinaryStorage } = pkg;
 import multer from "multer";
 
-console.log("DEBUG: uploadMedia.js loaded");
-console.log("DEBUG: CloudinaryStorage constructor:", typeof CloudinaryStorage);
-console.log("DEBUG: pkg keys:", Object.keys(pkg));
+console.log("DEBUG: uploadMedia.js loading attempt...");
+console.log("DEBUG: pkg type:", typeof pkg);
+console.log("DEBUG: pkg default present:", pkg && !!pkg.default);
+
+// Support for different versions and CJS/ESM interop
+let CloudinaryStorage;
+if (typeof pkg === 'function') {
+  CloudinaryStorage = pkg;
+} else if (pkg && pkg.CloudinaryStorage) {
+  CloudinaryStorage = pkg.CloudinaryStorage;
+} else if (pkg && pkg.default && pkg.default.CloudinaryStorage) {
+  CloudinaryStorage = pkg.default.CloudinaryStorage;
+} else {
+  CloudinaryStorage = pkg;
+}
+
+console.log("DEBUG: Final CloudinaryStorage constructor type:", typeof CloudinaryStorage);
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
