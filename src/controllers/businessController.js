@@ -132,6 +132,7 @@ const getBusinessProductsPost = async (req, res) => {
 };
 
 const addProductPost = async (req, res) => {
+  console.log("DEBUG: addProductPost reached");
   const user = req.user;
   try {
     let {
