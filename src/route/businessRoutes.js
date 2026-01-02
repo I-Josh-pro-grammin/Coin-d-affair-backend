@@ -362,7 +362,14 @@ const router = express.Router();
 router.post("/business/create-business", protectedRoutes("user"), createBusiness);
 router.patch("/business/update-profile", protectedRoutes(["business", "user"]), updateBusiness);
 // Allow both 'business' and 'user' (individual sellers) to access product routes
-router.post("/business/add-product", protectedRoutes(["business", "user"]), upload.array("images", 5), checkSubscription, addProductPost);
+router.post("/business/add-product",
+   protectedRoutes(["business", "user"]),
+   (req, res, next) => { console.log("DEBUG: Route /business/add-product hit, starting upload..."); next(); },
+   upload.array("images", 5),
+   (req, res, next) => { console.log("DEBUG: Upload middleware finished, checking subscription..."); next(); },
+   checkSubscription,
+   addProductPost
+);
 router.post("/business/update-product/:productId", protectedRoutes(["business", "user"]), upload.array("images", 5), updateProductPost);
 router.delete("/business/delete-product/:productId", protectedRoutes(["business", "user"]), deleteProductPost);
 router.get("/business/business-profile", protectedRoutes(["business", "user"]), getBusinessProfile);
