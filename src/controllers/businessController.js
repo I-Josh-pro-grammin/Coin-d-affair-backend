@@ -132,6 +132,7 @@ const getBusinessProductsPost = async (req, res) => {
 };
 
 const addProductPost = async (req, res) => {
+  console.log("DEBUG: addProductPost reached");
   const user = req.user;
   try {
     let {
@@ -274,6 +275,8 @@ const addProductPost = async (req, res) => {
       return res.status(500).json({
         message: "Internal server error",
         details: error.message,
+        hint: error.hint,
+        code: error.code,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }

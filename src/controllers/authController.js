@@ -242,6 +242,17 @@ const updateProfile = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
+    // Check if phone is already taken by another user
+    if (phone) {
+      const phoneCheck = await pool.query(
+        `SELECT user_id FROM users WHERE phone = $1 AND user_id != $2`,
+        [phone, userId]
+      );
+      if (phoneCheck.rowCount > 0) {
+        return res.status(400).json({ message: "Phone number already in use by another account" });
+      }
+    }
+
     const result = await pool.query(
       `UPDATE users 
        SET full_name = COALESCE($1, full_name), 
