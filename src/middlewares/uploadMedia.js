@@ -29,8 +29,9 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "products",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"], // Explicitly allow only these formats
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
     public_id: (req, file) => file.fieldname + '-' + Date.now(),
+    cloudinary: cloudinary, // Redundant passing for safety
   },
 });
 
