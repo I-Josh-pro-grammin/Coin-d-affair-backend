@@ -1,10 +1,6 @@
 import cloudinary from "../config/cloudinary.js";
 import pkg from 'multer-storage-cloudinary';
-<<<<<<< HEAD
-const CloudinaryStorage = pkg.CloudinaryStorage || pkg;
-=======
 const { CloudinaryStorage } = pkg;
->>>>>>> f1f05c92587fc6b4ee1d636aaf92e04cb819facc
 import multer from "multer";
 
 console.log("DEBUG: uploadMedia.js loaded");
