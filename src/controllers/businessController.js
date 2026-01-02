@@ -132,7 +132,6 @@ const getBusinessProductsPost = async (req, res) => {
 };
 
 const addProductPost = async (req, res) => {
-  console.log("DEBUG: addProductPost reached");
   const user = req.user;
   try {
     let {
@@ -275,8 +274,6 @@ const addProductPost = async (req, res) => {
       return res.status(500).json({
         message: "Internal server error",
         details: error.message,
-        hint: error.hint,
-        code: error.code,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
@@ -371,16 +368,16 @@ const updateProductPost = async (req, res) => {
         updated_at = NOW()
       WHERE listings_id = $12`,
       [
-        categoryId || null,
-        subcategoryId || null,
+        categoryId ? parseInt(categoryId) : null,
+        subcategoryId ? parseInt(subcategoryId) : null,
         title || null,
         description || null,
-        !isNaN(parseFloat(price)) ? parseFloat(price) : null,
+        (price && price !== "") ? parseFloat(price) : null,
         currency || null,
         condition || null,
         typeof isNegotiable === "undefined" ? null : isNegotiable,
         typeof canDeliver === "undefined" ? null : canDeliver,
-        !isNaN(parseInt(stock)) ? parseInt(stock) : null,
+        (stock && stock !== "") ? parseInt(stock) : null,
         attributes ? JSON.stringify(attributes) : null,
         productId,
       ]
@@ -463,25 +460,22 @@ const deleteProductPost = async (req, res) => {
       [productId]
     );
 
-    if (checkProduct.rowCount > 0) {
-      const hasActiveOrders = checkProduct.rows.some(
-        (order) =>
-          order.orderStatus !== "delivered" && order.orderStatus !== "cancelled"
-      );
-
-      if (hasActiveOrders) {
-        return res
-          .status(400)
-          .json({ message: "Cannot delete product. It is in active orders" });
-      }
+    if (checkProduct.rowCount == 0) {
+      return res.status(200).json({ message: "Product deleted successfully" });
     }
 
-    // Delete associated media first to avoid foreign key constraints
-    await pool.query(`DELETE FROM listing_media WHERE listing_id = $1`, [productId]);
+    const hasActiveOrders = checkProduct.rows.some(
+      (order) =>
+        order.orderStatus !== "delivered" && order.orderStatus !== "cancelled"
+    );
 
-    // Now delete the listing
-    await pool.query(`DELETE FROM listings WHERE listings_id = $1`, [productId]);
+    if (hasActiveOrders) {
+      return res
+        .status(400)
+        .json({ message: "Cannot delete product. It is in orders" });
+    }
 
+    await pool.query(`DELETE FROM listings where listings_id=$1`, [productId]);
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
