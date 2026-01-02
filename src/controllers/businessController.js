@@ -275,6 +275,8 @@ const addProductPost = async (req, res) => {
       return res.status(500).json({
         message: "Internal server error",
         details: error.message,
+        hint: error.hint,
+        code: error.code,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
@@ -373,12 +375,12 @@ const updateProductPost = async (req, res) => {
         subcategoryId || null,
         title || null,
         description || null,
-        (price && price !== "") ? parseFloat(price) : null,
+        !isNaN(parseFloat(price)) ? parseFloat(price) : null,
         currency || null,
         condition || null,
         typeof isNegotiable === "undefined" ? null : isNegotiable,
         typeof canDeliver === "undefined" ? null : canDeliver,
-        (stock && stock !== "") ? parseInt(stock) : null,
+        !isNaN(parseInt(stock)) ? parseInt(stock) : null,
         attributes ? JSON.stringify(attributes) : null,
         productId,
       ]
@@ -461,12 +463,12 @@ const deleteProductPost = async (req, res) => {
       [productId]
     );
 
-    // If no orders, proceed to delete
     if (checkProduct.rowCount > 0) {
       const hasActiveOrders = checkProduct.rows.some(
         (order) =>
           order.orderStatus !== "delivered" && order.orderStatus !== "cancelled"
       );
+
       if (hasActiveOrders) {
         return res
           .status(400)
@@ -474,7 +476,12 @@ const deleteProductPost = async (req, res) => {
       }
     }
 
-    await pool.query(`DELETE FROM listings where listings_id=$1`, [productId]);
+    // Delete associated media first to avoid foreign key constraints
+    await pool.query(`DELETE FROM listing_media WHERE listing_id = $1`, [productId]);
+
+    // Now delete the listing
+    await pool.query(`DELETE FROM listings WHERE listings_id = $1`, [productId]);
+
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
