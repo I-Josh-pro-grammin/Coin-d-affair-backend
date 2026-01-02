@@ -8,4 +8,5 @@ v2.config({
   timeout: 60000 // 60 seconds timeout
 });
 
+// Revert to simple default export for compatibility
 export default v2;

@@ -24,4 +24,17 @@ router.get('/test-cloudinary', async (req, res) => {
   }
 });
 
+router.get('/test-schema', async (req, res) => {
+  try {
+    const result = await pool.query(`
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'listings'
+        `);
+    res.json({ success: true, columns: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
