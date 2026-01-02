@@ -363,8 +363,9 @@ router.post("/business/create-business", protectedRoutes("user"), createBusiness
 router.patch("/business/update-profile", protectedRoutes(["business", "user"]), updateBusiness);
 // Allow both 'business' and 'user' (individual sellers) to access product routes
 router.post("/business/add-product",
+   (req, res, next) => { console.log("DEBUG: Route /business/add-product hit (Pre-Auth), Headers:", req.headers); next(); },
    protectedRoutes(["business", "user"]),
-   (req, res, next) => { console.log("DEBUG: Route /business/add-product hit, starting upload..."); next(); },
+   (req, res, next) => { console.log("DEBUG: Auth passed, starting upload..."); next(); },
    upload.array("images", 5),
    (req, res, next) => { console.log("DEBUG: Upload middleware finished, checking subscription..."); next(); },
    checkSubscription,
