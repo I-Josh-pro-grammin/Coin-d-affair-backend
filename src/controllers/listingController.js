@@ -78,7 +78,7 @@ const getListing = async (req, res) => {
 
     if (search) {
       idQuery += ` AND(LOWER(l.title) LIKE $${idx} OR LOWER(l.description) LIKE $${idx + 1})`;
-      const likeSearch = `% ${search.toLowerCase()}% `;
+      const likeSearch = `%${search.toLowerCase()}%`;
       params.push(likeSearch, likeSearch);
       idx += 2;
     }
