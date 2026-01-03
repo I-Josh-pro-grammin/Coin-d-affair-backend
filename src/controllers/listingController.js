@@ -15,6 +15,8 @@ l.*,
   b.contact_email as business_email,
   u.phone as seller_phone,
   u.email as seller_email,
+  COALESCE(AVG(pr.rating), 0)::FLOAT as rating,
+  COUNT(pr.rating)::INT as review_count,
   COALESCE(
     json_agg(
       jsonb_build_object(
@@ -32,6 +34,7 @@ l.*,
     LEFT JOIN subcategories sc ON l.subcategory_id = sc.subcategory_id
     LEFT JOIN businesses b ON l.business_id = b.business_id
     LEFT JOIN users u ON l.seller_id = u.user_id
+    LEFT JOIN product_ratings pr ON l.listings_id = pr.listing_id
     LEFT JOIN listing_media lm ON lm.listing_id = l.listings_id
   `;
 
@@ -54,10 +57,13 @@ const getListing = async (req, res) => {
     let params = [];
     let idx = 1;
 
+    let ratingJoin = sortBy === 'rating' ? 'LEFT JOIN product_ratings pr ON l.listings_id = pr.listing_id' : '';
+
     let idQuery = `
         SELECT l.listings_id
         FROM listings l
         LEFT JOIN locations loc ON l.location_id = loc.location_id
+        ${ratingJoin}
         WHERE 1 = 1
   `;
 
@@ -97,6 +103,8 @@ const getListing = async (req, res) => {
       idQuery += ` ORDER BY l.price ASC`;
     } else if (sortBy == "price_desc") {
       idQuery += ` ORDER BY l.price DESC`;
+    } else if (sortBy == "rating") {
+      idQuery += ` GROUP BY l.listings_id HAVING COUNT(pr.rating) > 0 ORDER BY AVG(pr.rating) DESC`;
     } else {
       idQuery += ` ORDER BY l.created_at DESC`;
     }
@@ -122,7 +130,7 @@ const getListing = async (req, res) => {
         ${baseListingSelect}
         WHERE l.listings_id = ANY($1)
         GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name, b.whatsapp, b.website, b.contact_email, u.phone, u.email
-        ORDER BY l.created_at DESC
+        ORDER BY array_position($1, l.listings_id)
   `;
 
     const listings = await pool.query(finalQuery, [ids]);
@@ -189,4 +197,34 @@ const getAllListings = async (req, res) => {
   }
 };
 
-export { getListing, getListingById, getAllListings };
+const submitRating = async (req, res) => {
+  try {
+    const { listingId } = req.params;
+    const { rating, comment } = req.body;
+    // Assuming backend auth middleware populates req.user
+    const userId = req.user?.user_id || req.user?.id || req.user?.userId;
+
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: "Invalid rating (1-5)" });
+    }
+
+    const query = `
+      INSERT INTO product_ratings (user_id, listing_id, rating, comment)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (user_id, listing_id) DO UPDATE
+      SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, created_at = CURRENT_TIMESTAMP
+      RETURNING *;
+    `;
+
+    await pool.query(query, [userId, listingId, rating, comment]);
+
+    res.status(200).json({ message: "Rating submitted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export { getListing, getListingById, getAllListings, submitRating };

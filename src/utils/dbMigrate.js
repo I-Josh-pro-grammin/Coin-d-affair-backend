@@ -95,6 +95,19 @@ export const runMigrations = async () => {
             );
         `);
 
+        // 6. Product Ratings Table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS product_ratings (
+                rating_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+                listing_id UUID REFERENCES listings(listings_id) ON DELETE CASCADE,
+                rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+                comment TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, listing_id)
+            );
+        `);
+
         // Update null is_approved (fallback)
         await client.query(`UPDATE listings SET is_approved = TRUE WHERE is_approved IS NULL`);
 

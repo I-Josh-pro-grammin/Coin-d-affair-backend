@@ -1,6 +1,7 @@
 import express from 'express';
-import { getListing, getListingById, getAllListings } from '../controllers/listingController.js';
+import { getListing, getListingById, getAllListings, submitRating } from '../controllers/listingController.js';
 import { listingsLimiter } from '../middlewares/rateLimiting.js';
+import protectedRoutes from '../middlewares/authMiddleware.js';
 
 
 const router = new express.Router();
@@ -79,9 +80,41 @@ const router = new express.Router();
  *     responses:
  *       200:
  *         description: List of all listings with pagination
+ *
+ * /api/products/{listingId}/rate:
+ *   post:
+ *     summary: Rate a product
+ *     tags: [Listings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: listingId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *               comment:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Rating submitted
+ *       401:
+ *         description: Unauthorized
  */
 router.get("/products/get-products", listingsLimiter, getListing)
 router.get("/products/:listingId", getListingById)
 router.get("/products/all", getAllListings)
+router.post("/products/:listingId/rate", protectedRoutes(), submitRating)
 
 export default router;
