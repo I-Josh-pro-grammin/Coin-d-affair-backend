@@ -152,7 +152,46 @@ const getListingById = async (req, res) => {
   try {
     const { listingId } = req.params;
     const query = `
-      ${baseListingSelect}
+      SELECT
+      l.*,
+        loc.name as location,
+        c.category_name,
+        c.slug as category_slug,
+        sc.subcategory_name,
+        sc.slug as subcategory_slug,
+        b.business_name,
+        b.whatsapp as business_whatsapp,
+        b.website as business_website,
+        b.contact_email as business_email,
+        u.phone as seller_phone,
+        u.email as seller_email,
+        COALESCE(AVG(pr.rating), 0)::FLOAT as rating,
+        (
+          SELECT COALESCE(AVG(pr2.rating), 0)::FLOAT
+          FROM product_ratings pr2
+          JOIN listings l2 ON pr2.listing_id = l2.listings_id
+          WHERE l2.seller_id = l.seller_id
+        ) as seller_rating,
+        COUNT(pr.rating)::INT as review_count,
+        COALESCE(
+          json_agg(
+            jsonb_build_object(
+              'media_id', lm.listing_media_id,
+              'type', lm.media_type,
+              'url', lm.url,
+              'order', lm.sort_order
+            ) ORDER BY lm.sort_order
+          ) FILTER(WHERE lm.listing_media_id IS NOT NULL),
+          '[]'
+        ) AS media
+          FROM listings l 
+          LEFT JOIN locations loc ON l.location_id = loc.location_id 
+          LEFT JOIN categories c ON l.category_id = c.category_id
+          LEFT JOIN subcategories sc ON l.subcategory_id = sc.subcategory_id
+          LEFT JOIN businesses b ON l.business_id = b.business_id
+          LEFT JOIN users u ON l.seller_id = u.user_id
+          LEFT JOIN product_ratings pr ON l.listings_id = pr.listing_id
+          LEFT JOIN listing_media lm ON lm.listing_id = l.listings_id
       WHERE l.listings_id = $1
       GROUP BY l.listings_id, loc.name, c.category_name, c.slug, sc.subcategory_name, sc.slug, b.business_name, b.whatsapp, b.website, b.contact_email, u.phone, u.email
       LIMIT 1
