@@ -354,14 +354,15 @@ const getAllListings = async (req, res) => {
     // add pagination params
     params.push(limit, offset);
     const query = `
-      SELECT l.*, b.business_name, u.email AS seller_email,
+      SELECT l.*, b.business_name, u.email AS seller_email, c.category_name,
         COALESCE(json_agg(jsonb_build_object('id', lm.listing_media_id, 'type', lm.media_type, 'url', lm.url) ORDER BY lm.sort_order) FILTER(WHERE lm.listing_media_id IS NOT NULL), '[]') as media
       FROM listings l
       LEFT JOIN businesses b ON l.business_id = b.business_id
       LEFT JOIN users u ON l.seller_id = u.user_id
+      LEFT JOIN categories c ON l.category_id = c.category_id
       LEFT JOIN listing_media lm ON lm.listing_id = l.listings_id
       ${where}
-      GROUP BY l.listings_id, b.business_name, u.email
+      GROUP BY l.listings_id, b.business_name, u.email, c.category_name
       ORDER BY l.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
         `;
