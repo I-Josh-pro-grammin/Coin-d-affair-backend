@@ -68,6 +68,32 @@ const register = async (req, res) => {
          VALUES ($1, 'pending', $2, $3, $4, $5)`,
         [userId, idType || null, idNumber || null, whatsapp || null, locationCity || null]
       );
+
+      // Notify Admin via Email
+      try {
+        const adminEmail = process.env.ADMIN_EMAIL || "gravityz0071@gmail.com";
+        await transporter.sendMail({
+          from: `"Coin d'affaire System" <${process.env.EMAIL_SENDER}>`,
+          to: adminEmail,
+          subject: "Nouveau Vendeur en attente de validation",
+          html: `
+            <h3>Nouvelle inscription vendeur</h3>
+            <p>Un nouveau vendeur vient de s'inscrire et nécessite une validation.</p>
+            <ul>
+              <li><strong>Nom:</strong> ${fullName}</li>
+              <li><strong>Email:</strong> ${email}</li>
+              <li><strong>Téléphone:</strong> ${phone}</li>
+              <li><strong>Type de compte:</strong> ${accountType}</li>
+              <li><strong>Business:</strong> ${businessName || 'N/A'}</li>
+            </ul>
+            <p>Veuillez vous connecter au tableau de bord admin pour valider ce compte.</p>
+            <a href="${frontendUrl}/admin/verification">Accéder au Dashboard Admin</a>
+          `
+        });
+        console.log(`✅ Admin notification email sent to ${adminEmail}`);
+      } catch (adminMailError) {
+        console.error('❌ Failed to send admin notification email:', adminMailError.message);
+      }
     }
 
     // Send verification email with proper error handling

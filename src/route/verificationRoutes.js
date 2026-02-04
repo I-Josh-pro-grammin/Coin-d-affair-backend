@@ -4,7 +4,8 @@ import {
     submitVerification,
     getVerificationStatus,
     getAllVerifications,
-    updateVerificationStatus
+    updateVerificationStatus,
+    getPendingVerificationsCount
 } from "../controllers/verificationController.js";
 import protectedRoutes from "../middlewares/authMiddleware.js";
 import upload from "../middlewares/uploadMedia.js";
@@ -34,6 +35,12 @@ router.get(
     "/admin/verifications",
     protectedRoutes("admin"),
     getAllVerifications
+);
+
+router.get(
+    "/admin/verifications/count",
+    protectedRoutes("admin"),
+    getPendingVerificationsCount
 );
 
 router.post(

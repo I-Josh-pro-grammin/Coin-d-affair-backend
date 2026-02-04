@@ -220,10 +220,31 @@ const getUserDetails = async (req, res) => {
     // fetch orders and listings summary
     const [orders, listings] = await Promise.all([
       pool.query(`SELECT COUNT(*):: int as total_orders, COALESCE(SUM(total_amount):: numeric, 0) as total_spent FROM orders WHERE user_id = $1`, [userId]),
-      pool.query(`SELECT COUNT(*):: int as total_listings FROM listings WHERE seller_id = $1`, [userId]),
+      pool.query(`
+        SELECT l.listings_id, l.title, l.price, l.created_at, l.is_approved,
+        (SELECT url FROM listing_media WHERE listing_id = l.listings_id AND media_type = 'image' ORDER BY sort_order LIMIT 1) as image
+        FROM listings l
+        WHERE l.seller_id = $1
+        ORDER BY l.created_at DESC
+        LIMIT 10
+      `, [userId]),
     ]);
 
-    return res.status(200).json({ user: user.rows[0], stats: { orders: orders.rows[0], listings: listings.rows[0] } });
+    // Calculate total listings based on the array length (or separate count query if pagination needed later)
+    // For now, let's keep the user expecting a "total_listings" count in stats but also provide the list.
+    // Ideally we do both. Let's do a quick count query too.
+    const totalListingsCount = await pool.query(`SELECT COUNT(*)::int as count FROM listings WHERE seller_id = $1`, [userId]);
+
+    return res.status(200).json({
+      user: user.rows[0],
+      stats: {
+        orders: orders.rows[0],
+        listings: {
+          total_listings: totalListingsCount.rows[0].count,
+          items: listings.rows
+        }
+      }
+    });
   } catch (err) {
     console.error("getUserDetails error:", err);
     return res.status(500).json({ message: "Internal server error" });

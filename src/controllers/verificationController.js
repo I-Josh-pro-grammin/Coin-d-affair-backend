@@ -153,3 +153,19 @@ export const updateVerificationStatus = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+/**
+ * Admin: Get pending verifications count
+ * Route: GET /api/admin/verifications/count
+ */
+export const getPendingVerificationsCount = async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT COUNT(*) as count FROM users WHERE verification_status = 'pending'`
+        );
+        res.json({ count: parseInt(result.rows[0].count) });
+    } catch (error) {
+        console.error("getPendingVerificationsCount error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
